@@ -412,7 +412,7 @@ function doSend(){
   chatHist.push({role:'user',content:q});
   if(chatHist.length>12)chatHist=chatHist.slice(-12);
   fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({system:buildSys(),messages:chatHist})}).then(function(r){return r.json();}).then(function(d){var responseText=d.text||(typeof d.error==='string'?d.error:JSON.stringify(d.error))||'No response';
-      thinking.textContent=responseText;
+      thinking.textContent=responseText.replace(/\*\*/g,'').replace(/^#+\s/gm,'').replace(/^\s*[-]\s/gm,'\u2022 ');
       if(d.text&&d.text.length>100){
         var dlWrap=document.createElement('div');
         dlWrap.style.cssText='margin-top:6px;';
