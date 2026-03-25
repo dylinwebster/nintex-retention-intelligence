@@ -377,7 +377,7 @@ function buildSys(){
   var pk=Object.keys(PROD.products);pk.forEach(function(p){s+=p+' GRR:'+JSON.stringify(PROD.products[p].grr)+'\n'+p+' NRR:'+JSON.stringify(PROD.products[p].nrr)+'\n'+p+' ARR:'+JSON.stringify(PROD.products[p].arr)+'\n';});
   s+='\nAnnualized:\n';PROD.annualized.forEach(function(a){s+=a.p+': GRR='+a.g+'% NRR='+a.n+'% ARR=$'+a.arr+'K Accts='+a.a+'\n';});
   s+='\n=== CSM COVERAGE ===\n';
-  var ck=Object.keys(CSM_DATA);ck.forEach(function(r){s+=r+':'+JSON.stringify(CSM_DATA[r])+'\n';});
+  var ck=Object.keys(CSM_BANDS);ck.forEach(function(r){s+=r+':'+JSON.stringify(CSM_BANDS[r])+'\n';});
   s+='\nIndustry CSM:'+JSON.stringify(CSM_IND)+'\n';
   return s;
 }
