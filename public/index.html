@@ -5,22 +5,22 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nintex Retention Intelligence</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-:root{--ink:#0F1729;--ink2:#3B4563;--muted:#8892A8;--surf:#F5F6FA;--card:#fff;--bdr:#E2E5ED;--blue:#3266ad;--green:#1D9E75;--red:#A32D2D;--amber:#854F0B;--purple:#7C3AED}
+:root{--ink:#1B1464;--ink2:#3B4563;--muted:#8892A8;--surf:#F5F6FA;--card:#fff;--bdr:#E2E5ED;--blue:#E91E8C;--green:#1D9E75;--red:#A32D2D;--amber:#854F0B;--purple:#7C3AED}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:'DM Sans',sans-serif;background:var(--surf);color:var(--ink);-webkit-font-smoothing:antialiased}
+body{font-family:'Aptos',Calibri,sans-serif;background:var(--surf);color:var(--ink);-webkit-font-smoothing:antialiased}
 .shell{max-width:1180px;margin:0 auto;padding:24px 24px 60px}
 .hdr h1{font-size:22px;font-weight:700;letter-spacing:-.4px}
 .hdr .sub{font-size:12px;color:var(--muted);margin:3px 0 0;font-family:'DM Mono',monospace}
 .tabs{display:flex;gap:3px;margin:16px 0 0;background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:3px}
-.tabs button{padding:8px 16px;border:none;background:0 0;border-radius:7px;font-family:'DM Sans',sans-serif;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:.15s;white-space:nowrap}
+.tabs button{padding:8px 16px;border:none;background:0 0;border-radius:7px;font-family:'Aptos',Calibri,sans-serif;font-size:12.5px;font-weight:600;color:var(--muted);cursor:pointer;transition:.15s;white-space:nowrap}
 .tabs button:hover{color:var(--ink2);background:var(--surf)}
-.tabs button.on{background:var(--ink);color:#fff}
+.tabs button.on{background:#1B1464;color:#fff}
 .pills{display:flex;gap:5px;margin:12px 0 14px;flex-wrap:wrap}
-.pill{padding:5px 13px;border:1.5px solid var(--bdr);background:var(--card);border-radius:100px;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;transition:.15s}
+.pill{padding:5px 13px;border:1.5px solid var(--bdr);background:var(--card);border-radius:100px;font-family:'Aptos',Calibri,sans-serif;font-size:11px;font-weight:600;color:var(--muted);cursor:pointer;transition:.15s}
 .pill:hover{border-color:var(--ink2);color:var(--ink2)}
-.pill.on{border-color:var(--blue);background:rgba(50,102,173,.08);color:var(--blue)}
+.pill.on{border-color:#E91E8C;background:rgba(233,30,140,.08);color:#E91E8C}
 .card{background:var(--card);border:1px solid var(--bdr);border-radius:12px;padding:18px 20px;margin-bottom:12px}
 .card h3{font-size:13px;font-weight:700;margin-bottom:2px}
 .card .desc{font-size:11px;color:var(--muted);margin-bottom:10px;font-family:'DM Mono',monospace}
@@ -46,7 +46,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--surf);color:var(--ink);-w
 .chk{display:flex;align-items:center;gap:4px;cursor:pointer;font-size:11px;font-weight:500;color:var(--ink2)}
 .chk input{accent-color:var(--blue)}
 .tbl{width:100%;border-collapse:collapse;font-size:11px}
-.tbl th{padding:6px 7px;text-align:left;font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:#fff;background:#1a1a2e}
+.tbl th{padding:6px 7px;text-align:left;font-weight:700;font-size:9.5px;text-transform:uppercase;letter-spacing:.4px;color:#fff;background:#1B1464}
 .tbl th.r{text-align:right}
 .tbl td{padding:5px 7px;border-bottom:1px solid var(--bdr)}
 .tbl td.r{text-align:right;font-family:'DM Mono',monospace;font-size:10.5px}
@@ -60,12 +60,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--surf);color:var(--ink);-w
 </style>
 </head>
 <body>
-<div id="authWall" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#F5F6FA;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:DM Sans,sans-serif;">
+<div id="authWall" style="position:fixed;top:0;left:0;width:100vw;height:100vh;background:#F5F6FA;z-index:99999;display:flex;align-items:center;justify-content:center;font-family:Aptos,Calibri,sans-serif;">
 <div style="background:#fff;border:1px solid #E2E5ED;border-radius:12px;padding:32px;width:340px;text-align:center;">
-<div style="font-size:20px;font-weight:700;color:#0F1729;margin-bottom:4px;">Nintex Retention Intelligence</div>
+<div style="font-size:20px;font-weight:700;color:#1B1464;margin-bottom:4px;">Nintex Retention Intelligence</div>
 <div style="font-size:12px;color:#8892A8;margin-bottom:20px;">Enter password to continue</div>
-<input id="authPw" type="password" placeholder="Password" style="width:100%;padding:10px 14px;border:1.5px solid #E2E5ED;border-radius:8px;font-size:13px;margin-bottom:12px;outline:none;font-family:DM Sans,sans-serif;" />
-<button id="authBtn" style="width:100%;padding:10px;background:#0F1729;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:DM Sans,sans-serif;">Enter</button>
+<input id="authPw" type="password" placeholder="Password" style="width:100%;padding:10px 14px;border:1.5px solid #E2E5ED;border-radius:8px;font-size:13px;margin-bottom:12px;outline:none;font-family:Aptos,Calibri,sans-serif;" />
+<button id="authBtn" style="width:100%;padding:10px;background:#1B1464;color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:Aptos,Calibri,sans-serif;">Enter</button>
 <div id="authErr" style="font-size:11px;color:#A32D2D;margin-top:8px;display:none;">Incorrect password</div>
 </div></div>
 <script>
@@ -97,7 +97,7 @@ var CUST=ALL.cust,PROD=ALL.prod,CSM_BANDS=ALL.csm_bands,CSM_IND=ALL.csm_ind;
 // UTILITIES
 // ============================================================
 var charts={};
-var COLORS=['#3266ad','#1D9E75','#A32D2D','#D97706','#7C3AED','#EC4899','#06B6D4','#84CC16','#F97316','#6366F1'];
+var COLORS=['#1B1464','#1D9E75','#A32D2D','#D97706','#7C3AED','#EC4899','#06B6D4','#84CC16','#F97316','#6366F1'];
 function fmtM(k){return '$'+(k/1000).toFixed(1)+'M';}
 function fmtK(k){return '$'+Math.round(Math.abs(k)).toLocaleString()+'K';}
 function pct(n){return n==null?'--':n.toFixed(1)+'%';}
@@ -139,7 +139,7 @@ builders.exec=function(){
   var wQ=Q.slice(-8),wCh=o.churn.slice(-8),wDs=o.downsell.slice(-8),wEx=o.expansion.slice(-8);
   mkC('c-waterfall','bar',wQ,[{label:'Churn',data:wCh,backgroundColor:'rgba(163,45,45,0.75)'},{label:'Downsell',data:wDs,backgroundColor:'rgba(217,119,6,0.6)'},{label:'Expansion',data:wEx,backgroundColor:'rgba(29,158,117,0.75)'}],{scales:{y:{ticks:{callback:function(v){return(v<0?'-':'')+'$'+Math.abs(v/1000).toFixed(1)+'M';}}}}});
   var annQ=Q.slice(3);
-  mkC('c-exec-grr','line',annQ,[lineDS('Ann. GRR',aG.slice(3),'#3266ad',{fill:true,backgroundColor:'rgba(50,102,173,0.06)'})],{scales:{y:{min:74,max:92,ticks:{callback:function(v){return v+'%';}}}}});
+  mkC('c-exec-grr','line',annQ,[lineDS('Ann. GRR',aG.slice(3),'#1B1464',{fill:true,backgroundColor:'rgba(50,102,173,0.06)'})],{scales:{y:{min:74,max:92,ticks:{callback:function(v){return v+'%';}}}}});
   mkC('c-exec-nrr','line',annQ,[lineDS('Ann. NRR',aN.slice(3),'#1D9E75',{fill:true,backgroundColor:'rgba(29,158,117,0.06)'})],{scales:{y:{min:88,max:118,ticks:{callback:function(v){return v+'%';}}}}});
 };
 builders.exec();
@@ -150,16 +150,16 @@ builders.exec();
 builders.cust=function(){
   var Q=CUST.quarters,annQ=Q.slice(3);
   var cView='Overall',cMet='grr';
-  var rC={Americas:'#3266ad',EMEA:'#1D9E75',APAC:'#D97706',MENA:'#A32D2D'};
-  var tC={'<$25K':'#94A3B8','$25-50K':'#D97706','$50-100K':'#3266ad','$100-300K':'#1D9E75','$300K+':'#7C3AED'};
+  var rC={Americas:'#1B1464',EMEA:'#1D9E75',APAC:'#D97706',MENA:'#A32D2D'};
+  var tC={'<$25K':'#94A3B8','$25-50K':'#D97706','$50-100K':'#1B1464','$100-300K':'#1D9E75','$300K+':'#7C3AED'};
 
   function draw(){
     var el=document.getElementById('custC');
     var M=cMet.toUpperCase();
     if(cView==='Overall'){
       el.innerHTML='<div class="card"><h3>Annualized '+M+': overall</h3><div class="desc">Trailing 4Q compounded</div><div class="ch"><canvas id="cc1"></canvas></div></div><div class="card"><h3>Accounts and ARR</h3><div class="ch-sm"><canvas id="cc2"></canvas></div></div>';
-      mkC('cc1','line',annQ,[lineDS('Ann. '+M,ann4q(CUST.overall[cMet]).slice(3),'#3266ad',{fill:true,backgroundColor:'rgba(50,102,173,0.06)'})],{scales:{y:{min:cMet==='grr'?74:88,max:cMet==='grr'?92:118,ticks:{callback:function(v){return v+'%';}}}}});
-      mkC('cc2','line',Q,[lineDS('Accounts',CUST.overall.accounts,'#3266ad'),lineDS('ARR ($M)',CUST.overall.arr.map(function(v){return v?v/1000:null;}),'#1D9E75',{yAxisID:'y2'})],{scales:{y:{position:'left'},y2:{position:'right',grid:{display:false},ticks:{callback:function(v){return '$'+v+'M';}}}}});
+      mkC('cc1','line',annQ,[lineDS('Ann. '+M,ann4q(CUST.overall[cMet]).slice(3),'#1B1464',{fill:true,backgroundColor:'rgba(50,102,173,0.06)'})],{scales:{y:{min:cMet==='grr'?74:88,max:cMet==='grr'?92:118,ticks:{callback:function(v){return v+'%';}}}}});
+      mkC('cc2','line',Q,[lineDS('Accounts',CUST.overall.accounts,'#1B1464'),lineDS('ARR ($M)',CUST.overall.arr.map(function(v){return v?v/1000:null;}),'#1D9E75',{yAxisID:'y2'})],{scales:{y:{position:'left'},y2:{position:'right',grid:{display:false},ticks:{callback:function(v){return '$'+v+'M';}}}}});
     } else if(cView==='By Region'){
       el.innerHTML='<div class="card"><h3>Annualized '+M+' by region</h3><div class="desc">All regions overlaid</div><div class="ch"><canvas id="cc1"></canvas></div></div><div class="card"><h3>Regional ARR ($M)</h3><div class="ch-sm"><canvas id="cc2"></canvas></div></div>';
       var ds=Object.keys(rC).map(function(r){return lineDS(r,ann4q(CUST.regions[r][cMet]).slice(3),rC[r]);});
@@ -202,7 +202,7 @@ builders.prod=function(){
       var wN=ann.reduce(function(s,x){return s+x.n*x.arr;},0)/tA;
       makeKPI(document.getElementById('kp'),[{l:'Total Product ARR',v:fmtM(tA)},{l:'Weighted Avg Ann. GRR',v:wG.toFixed(1)+'%'},{l:'Weighted Avg Ann. NRR',v:wN.toFixed(1)+'%'},{l:'Product Families',v:ann.length}]);
       var so=ann.slice().sort(function(a,b){return b.arr-a.arr;});
-      mkC('pc1','bar',so.map(function(x){return x.p;}),[{label:'Ann. GRR',data:so.map(function(x){return x.g;}),backgroundColor:'#3266ad',borderRadius:3,barPercentage:.7,categoryPercentage:.75},{label:'Ann. NRR',data:so.map(function(x){return x.n;}),backgroundColor:'#1D9E75',borderRadius:3,barPercentage:.7,categoryPercentage:.75}],{indexAxis:'y',scales:{x:{min:60,max:115,ticks:{callback:function(v){return v+'%';}}},y:{ticks:{font:{family:'DM Sans',size:11}}}}});
+      mkC('pc1','bar',so.map(function(x){return x.p;}),[{label:'Ann. GRR',data:so.map(function(x){return x.g;}),backgroundColor:'#1B1464',borderRadius:3,barPercentage:.7,categoryPercentage:.75},{label:'Ann. NRR',data:so.map(function(x){return x.n;}),backgroundColor:'#1D9E75',borderRadius:3,barPercentage:.7,categoryPercentage:.75}],{indexAxis:'y',scales:{x:{min:60,max:115,ticks:{callback:function(v){return v+'%';}}},y:{ticks:{font:{family:'DM Sans',size:11}}}}});
       var t=document.getElementById('ptbl');var h='<thead><tr><th>Product</th><th class="r">ARR</th><th class="r">%</th><th class="r">Ann. GRR</th><th class="r">Ann. NRR</th><th class="r">Exp. lift</th></tr></thead><tbody>';
       so.forEach(function(x){var gc=x.g<78?'color:#A32D2D':x.g<84?'color:#854F0B':'color:#0F6E56';var nc=x.n<90?'color:#A32D2D':x.n<100?'color:#854F0B':'color:#0F6E56';h+='<tr><td class="b">'+x.p+'</td><td class="r">'+fmtM(x.arr)+'</td><td class="r">'+(x.arr/tA*100).toFixed(1)+'%</td><td class="r" style="'+gc+';font-weight:600">'+x.g.toFixed(1)+'%</td><td class="r" style="'+nc+';font-weight:600">'+x.n.toFixed(1)+'%</td><td class="r">+'+(x.n-x.g).toFixed(1)+'pp</td></tr>';});
       t.innerHTML=h+'</tbody>';
@@ -253,7 +253,7 @@ builders.csm=function(){
         var bands=CSM_BANDS[curReg]||[];
         var labs=bands.map(function(b){return b.band;});
         mkC('cs1','bar',labs,[
-          {label:'GRR',data:bands.map(function(b){return b.grr;}),backgroundColor:'#3266ad',barPercentage:0.7,categoryPercentage:0.8},
+          {label:'GRR',data:bands.map(function(b){return b.grr;}),backgroundColor:'#1B1464',barPercentage:0.7,categoryPercentage:0.8},
           {label:'NRR',data:bands.map(function(b){return b.nrr;}),backgroundColor:'#1D9E75',barPercentage:0.7,categoryPercentage:0.8},
           {label:'CSM Coverage %',data:bands.map(function(b){return b.csmPct;}),type:'line',borderColor:'#D97706',backgroundColor:'#D9770622',borderWidth:2,pointRadius:3,yAxisID:'y2',tension:0.3}
         ],{scales:{y:{min:70,max:115,ticks:{callback:function(v){return v+'%';}}},y2:{position:'right',min:0,max:100,grid:{display:false},ticks:{callback:function(v){return v+'%';}}}}});
@@ -263,7 +263,7 @@ builders.csm=function(){
       el.innerHTML='<div class="card"><h3>Unassigned ARR by industry</h3><div class="desc">Industries with highest unassigned ARR; expansion per account shown</div><div class="ch-lg"><canvas id="cs1"></canvas></div></div>';
       var sorted=CSM_IND.slice(0,12);
       mkC('cs1','bar',sorted.map(function(x){return x.industry;}),[
-        {label:'Unassigned ARR ($K)',data:sorted.map(function(x){return x.uArr;}),backgroundColor:'#3266ad'},
+        {label:'Unassigned ARR ($K)',data:sorted.map(function(x){return x.uArr;}),backgroundColor:'#1B1464'},
         {label:'Expansion/Acct ($)',data:sorted.map(function(x){return x.expPerAcct||0;}),backgroundColor:'#1D9E75',yAxisID:'y2'}
       ],{indexAxis:'y',scales:{x:{position:'top'},y:{ticks:{font:{size:10}}},y2:{position:'top',grid:{display:false}}}});
     }
@@ -319,17 +319,17 @@ builders.defs();
 // ============================================================
 (function(){
 var fab=document.createElement('button');
-fab.style.cssText='position:fixed;bottom:24px;right:24px;z-index:9999;background:#0F1729;color:#fff;border:none;border-radius:50px;padding:12px 20px;font-family:DM Sans,sans-serif;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.18);display:flex;align-items:center;gap:6px;';
+fab.style.cssText='position:fixed;bottom:24px;right:24px;z-index:9999;background:#1B1464;color:#fff;border:none;border-radius:50px;padding:12px 20px;font-family:Aptos,Calibri,sans-serif;font-size:13px;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.18);display:flex;align-items:center;gap:6px;';
 fab.textContent='\u2709 Ask a question';
 document.body.appendChild(fab);
 
 var dw=document.createElement('div');
-dw.style.cssText='position:fixed;top:0;right:-420px;width:420px;height:100vh;background:#fff;border-left:1px solid #E2E5ED;z-index:10000;transition:right .3s;display:flex;flex-direction:column;font-family:DM Sans,sans-serif;box-shadow:-4px 0 24px rgba(0,0,0,.08);';
+dw.style.cssText='position:fixed;top:0;right:-420px;width:420px;height:100vh;background:#fff;border-left:1px solid #E2E5ED;z-index:10000;transition:right .3s;display:flex;flex-direction:column;font-family:Aptos,Calibri,sans-serif;box-shadow:-4px 0 24px rgba(0,0,0,.08);';
 
 var hdr=document.createElement('div');
 hdr.style.cssText='padding:14px 18px;border-bottom:1px solid #E2E5ED;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;';
 var hdrLeft=document.createElement('div');
-hdrLeft.innerHTML='<div style="font-size:14px;font-weight:700;color:#0F1729;">Retention Intelligence</div><div id="chatCtx" style="font-size:10px;color:#8892A8;margin-top:2px;">Context: Executive Summary</div>';
+hdrLeft.innerHTML='<div style="font-size:14px;font-weight:700;color:#1B1464;">Retention Intelligence</div><div id="chatCtx" style="font-size:10px;color:#8892A8;margin-top:2px;">Context: Executive Summary</div>';
 var closeBtn=document.createElement('button');
 closeBtn.style.cssText='background:none;border:none;font-size:22px;cursor:pointer;color:#8892A8;padding:4px 8px;line-height:1;';
 closeBtn.innerHTML='\u00D7';
@@ -347,10 +347,10 @@ bar.style.cssText='padding:12px 18px;border-top:1px solid #E2E5ED;display:flex;g
 var inp=document.createElement('input');
 inp.type='text';
 inp.placeholder='Ask about retention, products, accounts...';
-inp.style.cssText='flex:1;padding:10px 14px;border:1.5px solid #E2E5ED;border-radius:8px;font-family:DM Sans,sans-serif;font-size:12px;outline:none;';
+inp.style.cssText='flex:1;padding:10px 14px;border:1.5px solid #E2E5ED;border-radius:8px;font-family:Aptos,Calibri,sans-serif;font-size:12px;outline:none;';
 var sendBtn=document.createElement('button');
 sendBtn.textContent='Send';
-sendBtn.style.cssText='background:#0F1729;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-family:DM Sans,sans-serif;font-size:12px;font-weight:600;cursor:pointer;';
+sendBtn.style.cssText='background:#1B1464;color:#fff;border:none;border-radius:8px;padding:10px 16px;font-family:Aptos,Calibri,sans-serif;font-size:12px;font-weight:600;cursor:pointer;';
 bar.appendChild(inp);
 bar.appendChild(sendBtn);
 dw.appendChild(bar);
@@ -369,7 +369,7 @@ function addBubble(role,text){
   var d=document.createElement('div');
   d.style.cssText='margin-bottom:12px;'+(role==='user'?'text-align:right;':'');
   var b=document.createElement('div');
-  b.style.cssText='display:inline-block;max-width:88%;padding:10px 14px;border-radius:12px;font-size:12px;line-height:1.65;text-align:left;white-space:pre-wrap;'+(role==='user'?'background:#0F1729;color:#fff;':'background:#F5F6FA;color:#0F1729;');
+  b.style.cssText='display:inline-block;max-width:88%;padding:10px 14px;border-radius:12px;font-size:12px;line-height:1.65;text-align:left;white-space:pre-wrap;'+(role==='user'?'background:#1B1464;color:#fff;':'background:#F5F6FA;color:#1B1464;');
   b.textContent=text;
   d.appendChild(b);
   msgsEl.appendChild(d);
@@ -418,7 +418,7 @@ function doSend(){
         dlWrap.style.cssText='margin-top:6px;';
         var dlBtn=document.createElement('button');
         dlBtn.textContent='\u2913 Download as Word';
-        dlBtn.style.cssText='background:none;border:1px solid #E2E5ED;border-radius:6px;padding:4px 10px;font-family:DM Sans,sans-serif;font-size:10px;color:#3266ad;cursor:pointer;font-weight:600;';
+        dlBtn.style.cssText='background:none;border:1px solid #E2E5ED;border-radius:6px;padding:4px 10px;font-family:Aptos,Calibri,sans-serif;font-size:10px;color:#3266ad;cursor:pointer;font-weight:600;';
         dlBtn.addEventListener('click',function(){
           dlBtn.textContent='Generating...';
           var ctx='';
