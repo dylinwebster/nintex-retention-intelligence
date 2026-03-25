@@ -1,5 +1,6 @@
 {
   "name": "nintex-retention-intelligence",
   "version": "1.0.0",
-  "private": true
+  "private": true,
+  "type": "module"
 }
