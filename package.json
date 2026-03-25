@@ -2,5 +2,8 @@
   "name": "nintex-retention-intelligence",
   "version": "1.0.0",
   "private": true,
-  "type": "module"
+  "type": "module",
+  "dependencies": {
+    "docx": "^8.5.0"
+  }
 }
