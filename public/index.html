@@ -382,7 +382,7 @@ addBubble('assistant','Hi! I have full access to Nintex retention data across cu
 var chatHist=[];
 
 function buildSys(){
-  var s='You are a retention analytics assistant for Nintex. You have aggregate retention data by quarter, region, ARR tier, industry, product family (L2), and CSM assignment status. You can answer questions about rates, trends, comparisons, and portfolio composition. You do NOT have individual account names or account-level detail; if asked for specific customer lists, explain that this requires a live connection to Salesforce and Databricks which is on the roadmap. Always cite specific numbers. Do not use em dashes. Be balanced.\n\n';
+  var s='You are a retention analytics assistant for Nintex. You have aggregate retention data by quarter, region, ARR tier, industry, product family (L2), and CSM assignment status. You can answer questions about rates, trends, comparisons, and portfolio composition. You do NOT have individual account names or account-level detail; if asked for specific customer lists, explain that this requires a live connection to Salesforce and Databricks which is on the roadmap. Always cite specific numbers. Do not use em dashes. Be balanced. Do not use any markdown formatting such as **bold** or *italics* or bullet points with dashes. Use plain text only.\n\n';
   s+='=== CUSTOMER DATA (22Q) ===\n';
   s+='Quarters:'+JSON.stringify(CUST.quarters)+'\n';
   s+='GRR:'+JSON.stringify(CUST.overall.grr)+'\nNRR:'+JSON.stringify(CUST.overall.nrr)+'\n';
