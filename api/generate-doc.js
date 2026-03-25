@@ -233,8 +233,7 @@ export default async function handler(req, res) {
     });
 
     const buffer = await Packer.toBuffer(doc);
-    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
-    res.setHeader('Content-Disposition', 'attachment; filename="Retention_Report.docx"');
-    res.status(200).send(buffer);
+    const base64 = buffer.toString('base64');
+    res.status(200).json({ base64: base64, filename: 'Retention_Report.docx' });
   } catch (err) { res.status(500).json({ error: err.message }); }
 }
