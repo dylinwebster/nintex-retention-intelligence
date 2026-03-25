@@ -436,8 +436,12 @@ async function sendMessage(){
   }
 }
 
-document.getElementById('chatSend').onclick=sendMessage;
-document.getElementById('chatInput').onkeydown=function(e){if(e.key==='Enter')sendMessage();};
+setTimeout(function(){
+  var sendBtn=document.getElementById('chatSend');
+  var inputEl=document.getElementById('chatInput');
+  if(sendBtn)sendBtn.addEventListener('click',sendMessage);
+  if(inputEl)inputEl.addEventListener('keydown',function(e){if(e.key==='Enter')sendMessage();});
+},500);
 })();
 
 </script>
