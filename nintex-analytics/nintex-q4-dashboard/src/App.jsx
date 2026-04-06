@@ -569,6 +569,7 @@ function ChatDrawer({open,onClose,systemPrompt}){
   const [messages,setMessages]=useState([])
   const [input,setInput]=useState('')
   const [loading,setLoading]=useState(false)
+  const [exporting,setExporting]=useState(false)
   const bottomRef=useRef(null)
   useEffect(()=>{bottomRef.current?.scrollIntoView({behavior:'smooth'})},[messages,loading])
 
@@ -587,19 +588,35 @@ function ChatDrawer({open,onClose,systemPrompt}){
     setLoading(false)
   }
 
-  const exportChatCSV=()=>{
-    const lines=['Nintex Q4 FY26 — Chat Export','Generated: '+new Date().toLocaleString(),'']
-    messages.forEach(m=>{lines.push((m.role==='user'?'You: ':'Assistant: ')+m.content);lines.push('')})
-    const csv=lines.map(r=>r.includes(',')?'"'+r.replace(/"/g,'""')+'"':r).join('\n')
-    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='nintex_chat_'+new Date().toISOString().slice(0,10)+'.csv';a.click()
-  }
-  const exportResponseCSV=(text)=>{
-    const rows=text.split('\n').filter(l=>l.trim()).map(l=>l.replace(/^\s*\d+[\.\)]\s*/,'').replace(/\*\*/g,'').trim())
-    const csv=rows.map(r=>r.includes(',')?'"'+r.replace(/"/g,'""')+'"':r).join('\n')
-    const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='nintex_export.csv';a.click()
+  const downloadDocx=async(msgs,label)=>{
+    if(exporting) return
+    setExporting(true)
+    try{
+      const res=await fetch('/api/generate-doc',{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({messages:msgs,title:'Q4 FY26 Renewal Intelligence — '+label,context:'Live Q4 pipeline data'})
+      })
+      const d=await res.json()
+      if(d.error){alert('Export failed: '+d.error);return}
+      const bytes=atob(d.base64)
+      const arr=new Uint8Array(bytes.length)
+      for(let i=0;i<bytes.length;i++) arr[i]=bytes.charCodeAt(i)
+      const blob=new Blob([arr],{type:'application/vnd.openxmlformats-officedocument.wordprocessingml.document'})
+      const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=d.filename||'nintex_export.docx';a.click()
+    }catch(e){alert('Export error: '+e.message)}
+    finally{setExporting(false)}
   }
 
+  const exportFullChat=()=>downloadDocx(messages,'Chat Export')
+  const exportSingleResponse=(content,i)=>downloadDocx(
+    [{role:'user',content:messages[i-1]?.content||'Query'},{role:'assistant',content}],
+    'Response Export'
+  )
+
   const STARTERS=['What is the Q4 forecast vs the 91% TPG GRR target?','Which accounts closing in April have churn risk?','How does Q4 at-risk ATR compare to Q3?','Which products have the largest Q4 ATR exposure?']
+
+  const btnStyle=(active)=>({padding:'5px 12px',borderRadius:6,border:`1px solid ${B.border}`,background:'transparent',color:active?B.orange:B.muted,fontSize:11,fontWeight:600,cursor:active?'pointer':'default',opacity:active?1:0.5})
 
   return (
     <>
@@ -611,7 +628,11 @@ function ChatDrawer({open,onClose,systemPrompt}){
             <div style={{fontSize:11,color:B.muted,marginTop:2}}>Grounded in live Q4 pipeline data</div>
           </div>
           <div style={{display:'flex',alignItems:'center',gap:8}}>
-            {messages.length>0&&<button onClick={exportChatCSV} style={{padding:'5px 12px',borderRadius:6,border:`1px solid ${B.border}`,background:'transparent',color:B.muted,fontSize:11,fontWeight:600,cursor:'pointer'}}>⬇ Export chat</button>}
+            {messages.length>0&&(
+              <button onClick={exportFullChat} disabled={exporting} style={btnStyle(!exporting)}>
+                {exporting?'Exporting…':'⬇ Export chat'}
+              </button>
+            )}
             <button onClick={onClose} style={{background:'none',border:'none',color:B.muted,fontSize:20,cursor:'pointer',lineHeight:1}}>✕</button>
           </div>
         </div>
@@ -629,7 +650,7 @@ function ChatDrawer({open,onClose,systemPrompt}){
           {messages.map((m,i)=>(
             <div key={i} style={{maxWidth:'90%',alignSelf:m.role==='user'?'flex-end':'flex-start'}}>
               <div style={{padding:'10px 14px',borderRadius:10,fontSize:12,lineHeight:1.65,background:m.role==='user'?B.navy:B.faint,color:m.role==='user'?'#fff':B.textMd,border:`1px solid ${m.role==='user'?'transparent':B.border}`,whiteSpace:'pre-wrap'}}>{m.content}</div>
-              {m.showExport&&<button onClick={()=>exportResponseCSV(m.content)} style={{marginTop:6,padding:'4px 10px',borderRadius:6,border:`1px solid ${B.border}`,background:'transparent',color:B.muted,fontSize:10,cursor:'pointer'}}>⬇ Export as CSV</button>}
+              {m.showExport&&<button onClick={()=>exportSingleResponse(m.content,i)} disabled={exporting} style={{marginTop:6,padding:'4px 10px',borderRadius:6,border:`1px solid ${B.border}`,background:'transparent',color:B.muted,fontSize:10,cursor:'pointer'}}>⬇ Export as Word doc</button>}
             </div>
           ))}
           {loading&&<div style={{alignSelf:'flex-start',padding:'10px 14px',borderRadius:10,background:B.faint,border:`1px solid ${B.border}`,fontSize:12,color:B.muted}}>Thinking...</div>}
