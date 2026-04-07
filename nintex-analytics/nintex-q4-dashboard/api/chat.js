@@ -112,11 +112,17 @@ function buildEnrichedSystem(frontendSystem, q4) {
     s += '\n' + JSON.stringify(dims);
   }
 
-  // ── At-risk accounts ─────────────────────────────────────────────────────
+  // ── At-risk accounts (capped at 50 highest ARR) ───────────────────────────
   if (q4.at_risk && q4.at_risk.length) {
-    s += '\n\n=== AT-RISK ACCOUNTS (open Q4 opps with risk_type set) ===';
+    const atRisk = q4.at_risk
+      .sort((a, b) => (b.current_arr || b.renewal_software_acv || 0) - (a.current_arr || a.renewal_software_acv || 0))
+      .slice(0, 50)
+      .map(r => Object.fromEntries(
+        Object.entries(r).filter(([k, v]) => v !== null && v !== '' && v !== 0)
+      ));
+    s += '\n\n=== AT-RISK ACCOUNTS (top 50 by ARR, open Q4 opps with risk_type set) ===';
     s += '\nFields: account_name, current_arr, risk_type, risk_color, stage, renewal_date, opp_id, arr_divergence_pct, product';
-    s += '\n' + JSON.stringify(q4.at_risk);
+    s += '\n' + JSON.stringify(atRisk);
   }
 
   // ── Week-over-week stage movements ────────────────────────────────────────
