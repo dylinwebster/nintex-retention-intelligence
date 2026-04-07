@@ -624,10 +624,10 @@ function WowTab({data}){
                       {(()=>{
                         const arr=arrByAccount[r.accountid]
                         const diff=arr!=null?(r.atr_proxy_usd||0)-arr:null
-                        const col=diff==null?B.muted:diff>=0?B.green:B.red
+                        const col=diff==null?B.muted:diff>0?B.green:diff<0?B.red:B.muted
                         return <>
                           <TD right isMono>{arr!=null?fK(arr):'—'}</TD>
-                          <TD right isMono color={col}>{diff!=null?(diff>=0?'+':'')+fK(diff):'—'}</TD>
+                          <TD right isMono color={col}>{diff!=null?(diff>0?'+':'')+fK(diff):'—'}</TD>
                         </>
                       })()}
                       <TD small>{r.stage_prior||'—'}</TD>
