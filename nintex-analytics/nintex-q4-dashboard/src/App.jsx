@@ -503,6 +503,11 @@ const dimsByName=useMemo(()=>{
 // ─── WoW Tab (redesigned) ─────────────────────────────────────────────────────
 function WowTab({data}){
   const rows=data.wow_movement||[]
+  const arrByAccount=useMemo(()=>{
+  const m={}
+  ;(data.top_accounts||[]).forEach(r=>{if(r.accountid)m[r.accountid]=r.current_arr_usd})
+  return m
+},[data])
 
   // ── Classify each movement into a theme ──────────────────────────────────
   const classify=r=>{
@@ -603,6 +608,8 @@ function WowTab({data}){
                   <thead><tr style={{background:B.faint}}>
                     <TH width={200}>Account</TH>
                     <TH right>ATR</TH>
+                    <TH right>Curr ARR</TH>
+                    <TH right>Diff</TH>
                     <TH>Stage Before</TH>
                     <TH>Stage After</TH>
                     <TH>Forecast Before</TH>
@@ -614,6 +621,15 @@ function WowTab({data}){
                     <tr key={i} style={{background:i%2===0?B.card:B.faint}}>
                       <TD bold color={B.navy} maxW={200} title={r.account_name}>{r.account_name||r.accountid?.slice(-8)||'—'}</TD>
                       <TD right isMono>{fK(r.atr_proxy_usd)}</TD>
+                      {(()=>{
+                        const arr=arrByAccount[r.accountid]
+                        const diff=arr!=null?(r.atr_proxy_usd||0)-arr:null
+                        const col=diff==null?B.muted:diff>=0?B.green:B.red
+                        return <>
+                          <TD right isMono>{arr!=null?fK(arr):'—'}</TD>
+                          <TD right isMono color={col}>{diff!=null?(diff>=0?'+':'')+fK(diff):'—'}</TD>
+                        </>
+                      })()}
                       <TD small>{r.stage_prior||'—'}</TD>
                       <TD small color={THEME_COLOR[g.theme]}>{r.stage_current||'—'}</TD>
                       <TD small>{r.forecast_prior||'—'}</TD>
