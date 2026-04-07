@@ -579,7 +579,7 @@ function ChatDrawer({open,onClose,systemPrompt}){
     const next=[...messages,{role:'user',content:text}]
     setMessages(next); setLoading(true)
     try{
-      const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:next,system:systemPrompt})})
+      const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({messages:next.map(({role,content})=>({role,content})),system:systemPrompt})})
       const d=await res.json()
       let text=d.content?.[0]?.text||d.error||'No response.'
       if(d.stop_reason==='max_tokens') text+='\n\n⚠ Response was cut off. Try asking for fewer items, or follow up with "continue from where you left off".'
