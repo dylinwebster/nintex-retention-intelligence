@@ -68,6 +68,9 @@ function buildEnrichedSystem(frontendSystem, q4) {
 
   // ── Account dimensions ────────────────────────────────────────────────────
   if (q4.account_dimensions && q4.account_dimensions.length) {
+    const dims = q4.account_dimensions
+      .sort((a, b) => (b.current_arr || 0) - (a.current_arr || 0))
+      .slice(0, 100);
     s += '\n\n=== ACCOUNT DIMENSIONS (enriched profile per Q4 renewal account) ===';
     s += '\nSource: salesforce.account + finance.retention_arr_fact + finance.arr_monthly + gong.call + salesforce.task';
     s += '\nFields: account_name, industry, region, billing_country, customer_segment, sbi_segment,';
