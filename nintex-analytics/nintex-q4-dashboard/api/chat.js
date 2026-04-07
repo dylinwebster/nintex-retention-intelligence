@@ -88,7 +88,7 @@ function buildEnrichedSystem(frontendSystem, q4) {
     s += '\narr_trend_direction: growing (>5% vs 3Q ago), shrinking (<-5%), flat, new';
     s += '\nData quality note: customer_since_date has ~23% population rate overall; higher for established accounts.';
     s += '\nTingono health scores: permissions pending IT approval. Add after Friday meeting.';
-    s += '\n' + JSON.stringify(q4.account_dimensions);
+    s += '\n' + JSON.stringify(dims);
   }
 
   // ── At-risk accounts ─────────────────────────────────────────────────────
