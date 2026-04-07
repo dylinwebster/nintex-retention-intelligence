@@ -500,82 +500,258 @@ const dimsByName=useMemo(()=>{
   )
 }
 
-// ─── WoW Tab ──────────────────────────────────────────────────────────────────
+// ─── WoW Tab (redesigned) ─────────────────────────────────────────────────────
 function WowTab({data}){
-  const ss=useSortState('atr_proxy_usd')
-  const sorted=useMemo(()=>[...data.wow_movement].sort((a,b)=>{
-    const av=a[ss.col]??'',bv=b[ss.col]??''
-    if(typeof av==='number') return ss.dir==='desc'?bv-av:av-bv
-    return ss.dir==='desc'?String(bv).localeCompare(String(av)):String(av).localeCompare(String(bv))
-  }),[data,ss.col,ss.dir])
+  const rows=data.wow_movement||[]
 
-  const dir=(prior,current)=>{
-    if(current==='Closed Lost') return {icon:'✕',color:B.red}
-    if(current==='6 - Closed Won'||current==='Submitted for Booking') return {icon:'✓',color:B.green}
-    if(current==='At Risk') return {icon:'↓',color:B.pink}
-    const ord=['1 - In Use','1 - Identification','2 - Renewal Campaign Started','2 - Qualification','3 - Contact Initiated','3 - Evaluation','4 - Negotiation','5 - Closing']
-    const pi=ord.indexOf(prior),ci=ord.indexOf(current)
-    if(pi!==-1&&ci!==-1&&ci>pi) return {icon:'↑',color:B.green}
-    if(pi!==-1&&ci!==-1&&ci<pi) return {icon:'↓',color:B.pink}
-    return {icon:'→',color:B.amber}
+  // ── Classify each movement into a theme ──────────────────────────────────
+  const classify=r=>{
+    const s=r.stage_current, sp=r.stage_prior, fp=r.forecast_prior, fc=r.forecast_current
+    if(s==='Closed Lost') return 'Closed Lost'
+    if(s==='6 - Closed Won'||s==='Submitted for Booking') return 'Won / Submitted'
+    if(s==='At Risk') return 'Moved to At Risk'
+    const fOrd=['Pipeline','Best Case','Most Likely','Commit']
+    const fi=fOrd.indexOf(fp), fj=fOrd.indexOf(fc)
+    const stageOrd=['1 - In Use','1 - Identification','2 - Renewal Campaign Started',
+      '2 - Qualification','3 - Contact Initiated','3 - Evaluation','4 - Negotiation','5 - Closing']
+    const si=stageOrd.indexOf(sp), sj=stageOrd.indexOf(s)
+    if(fi!==-1&&fj!==-1&&fj>fi) return 'Forecast Upgraded'
+    if(fi!==-1&&fj!==-1&&fj<fi) return 'Forecast Downgraded'
+    if(si!==-1&&sj!==-1&&sj>si) return 'Stage Progressed'
+    if(si!==-1&&sj!==-1&&sj<si) return 'Stage Regressed'
+    return 'Other Movement'
   }
 
-  const won =sorted.filter(r=>r.stage_current==='6 - Closed Won'||r.stage_current==='Submitted for Booking')
-  const lost=sorted.filter(r=>r.stage_current==='Closed Lost')
+  const THEME_ORDER=['Won / Submitted','Forecast Upgraded','Stage Progressed',
+    'Forecast Downgraded','Stage Regressed','Moved to At Risk','Closed Lost','Other Movement']
+
+  const THEME_COLOR={
+    'Won / Submitted':      B.green,
+    'Forecast Upgraded':    B.green,
+    'Stage Progressed':     B.green,
+    'Forecast Downgraded':  B.amber,
+    'Stage Regressed':      B.amber,
+    'Moved to At Risk':     B.pink,
+    'Closed Lost':          B.red,
+    'Other Movement':       B.muted,
+  }
+
+  const THEME_ICON={
+    'Won / Submitted':      '✓',
+    'Forecast Upgraded':    '▲',
+    'Stage Progressed':     '↑',
+    'Forecast Downgraded':  '▼',
+    'Stage Regressed':      '↓',
+    'Moved to At Risk':     '⚠',
+    'Closed Lost':          '✕',
+    'Other Movement':       '→',
+  }
+
+  // Group rows by theme
+  const grouped=useMemo(()=>{
+    const g={}
+    rows.forEach(r=>{
+      const t=classify(r)
+      if(!g[t]) g[t]={theme:t,rows:[],totalATR:0}
+      g[t].rows.push(r)
+      g[t].totalATR+=(r.atr_proxy_usd||0)
+    })
+    return THEME_ORDER.map(t=>g[t]).filter(Boolean)
+  },[rows])
+
+  const [expanded,setExpanded]=useState({})
+  const toggle=t=>setExpanded(e=>({...e,[t]:!e[t]}))
+
+  // KPI counts
+  const won =rows.filter(r=>r.stage_current==='6 - Closed Won'||r.stage_current==='Submitted for Booking')
+  const lost=rows.filter(r=>r.stage_current==='Closed Lost')
+  const atRisk=rows.filter(r=>r.stage_current==='At Risk')
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
-        <KPI label="Accounts Moved" value={sorted.length} accent={B.purple} sub="Since prior snapshot"/>
+        <KPI label="Total Movements" value={rows.length} accent={B.purple} sub="Since prior snapshot"/>
         <KPI label="Won / Closing" value={won.length} accent={B.green} sub={fM(won.reduce((s,r)=>s+(r.atr_proxy_usd||0),0))}/>
         <KPI label="Closed Lost" value={lost.length} accent={B.red} sub={fM(lost.reduce((s,r)=>s+(r.atr_proxy_usd||0),0))}/>
-        <KPI label="Moved to At Risk" value={sorted.filter(r=>r.stage_current==='At Risk').length} accent={B.pink}/>
+        <KPI label="Moved to At Risk" value={atRisk.length} accent={B.pink} sub={fM(atRisk.reduce((s,r)=>s+(r.atr_proxy_usd||0),0))}/>
       </div>
-      <div style={cardStyle}>
-        <div style={{display:'flex',justifyContent:'flex-end',marginBottom:10}}>
-          <ExportBtn onClick={()=>exportCSV(sorted,'q4_wow.csv')}/>
+
+      {rows.length===0?(
+        <div style={{...cardStyle,textAlign:'center',padding:48,color:B.muted}}>
+          <div style={{fontSize:14,marginBottom:8}}>No stage movements detected yet</div>
+          <div style={{fontSize:12}}>Expected early in the quarter. Check back next week as snapshots accumulate.</div>
         </div>
-        {sorted.length===0?(
-          <div style={{textAlign:'center',padding:48,color:B.muted}}>
-            <div style={{fontSize:14,marginBottom:8}}>No stage movements detected yet</div>
-            <div style={{fontSize:12}}>Expected early in the quarter. Check back next week as snapshots accumulate.</div>
-          </div>
-        ):(
-          <div style={{overflowX:'auto'}}>
-            <table style={{width:'100%',borderCollapse:'collapse'}}>
-              <thead><tr>
-                <TH width={36}>Dir</TH>
-                <SortTH col="atr_proxy_usd" ss={ss} right>ATR</SortTH>
-                <SortTH col="stage_prior" ss={ss}>Stage Before</SortTH>
-                <SortTH col="stage_current" ss={ss}>Stage After</SortTH>
-                <SortTH col="forecast_prior" ss={ss}>Forecast Before</SortTH>
-                <SortTH col="forecast_current" ss={ss}>Forecast After</SortTH>
-                <SortTH col="risk_type_prior" ss={ss}>Risk Before</SortTH>
-                <SortTH col="risk_type_current" ss={ss}>Risk After</SortTH>
-              </tr></thead>
-              <tbody>{sorted.map((r,i)=>{
-                const {icon,color}=dir(r.stage_prior,r.stage_current)
-                return (
-                  <tr key={i} style={{background:i%2===0?B.card:B.faint}}>
-                    <TD><span style={{...mono,fontSize:16,color,fontWeight:700}}>{icon}</span></TD>
-                    <TD right isMono bold color={B.navy}>{fK(r.atr_proxy_usd)}</TD>
-                    <TD small><Dot color={stageCol(r.stage_prior)}/>{r.stage_prior}</TD>
-                    <TD small><Dot color={stageCol(r.stage_current)}/>{r.stage_current}</TD>
-                    <TD small>{r.forecast_prior}</TD>
-                    <TD small color={r.forecast_current==='Commit'?B.orange:B.textMd} bold={r.forecast_current==='Commit'}>{r.forecast_current}</TD>
-                    <TD small>{r.risk_type_prior?<Badge label={r.risk_type_prior} color={riskCol(r.risk_type_prior)}/>:<span style={{color:B.muted}}>—</span>}</TD>
-                    <TD small>{r.risk_type_current?<Badge label={r.risk_type_current} color={riskCol(r.risk_type_current)}/>:<span style={{color:B.muted}}>—</span>}</TD>
-                  </tr>
-                )
-              })}</tbody>
-            </table>
-          </div>
-        )}
+      ):(
+        <div style={{display:'flex',flexDirection:'column',gap:8}}>
+          {grouped.map(g=>(
+            <div key={g.theme} style={{...cardStyle,padding:0,overflow:'hidden'}}>
+              {/* Theme header row */}
+              <div
+                onClick={()=>toggle(g.theme)}
+                style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',cursor:'pointer',borderBottom:expanded[g.theme]?`1px solid ${B.border}`:'none'}}
+              >
+                <span style={{fontSize:18,color:THEME_COLOR[g.theme],fontWeight:700,width:20,textAlign:'center'}}>{THEME_ICON[g.theme]}</span>
+                <span style={{fontWeight:700,fontSize:13,color:B.navy,flex:1}}>{g.theme}</span>
+                <span style={{...mono,fontSize:12,color:B.muted,marginRight:8}}>{fM(g.totalATR)}</span>
+                <span style={{background:THEME_COLOR[g.theme],color:'#fff',borderRadius:12,padding:'2px 9px',fontSize:11,fontWeight:700}}>{g.rows.length}</span>
+                <span style={{color:B.muted,fontSize:12,marginLeft:4}}>{expanded[g.theme]?'▲':'▼'}</span>
+              </div>
+
+              {/* Expanded account list */}
+              {expanded[g.theme]&&(
+                <table style={{width:'100%',borderCollapse:'collapse'}}>
+                  <thead><tr style={{background:B.faint}}>
+                    <TH width={200}>Account</TH>
+                    <TH right>ATR</TH>
+                    <TH>Stage Before</TH>
+                    <TH>Stage After</TH>
+                    <TH>Forecast Before</TH>
+                    <TH>Forecast After</TH>
+                    <TH>Risk Before</TH>
+                    <TH>Risk After</TH>
+                  </tr></thead>
+                  <tbody>{g.rows.sort((a,b)=>(b.atr_proxy_usd||0)-(a.atr_proxy_usd||0)).map((r,i)=>(
+                    <tr key={i} style={{background:i%2===0?B.card:B.faint}}>
+                      <TD bold color={B.navy} maxW={200} title={r.account_name}>{r.account_name||r.accountid?.slice(-8)||'—'}</TD>
+                      <TD right isMono>{fK(r.atr_proxy_usd)}</TD>
+                      <TD small>{r.stage_prior||'—'}</TD>
+                      <TD small color={THEME_COLOR[g.theme]}>{r.stage_current||'—'}</TD>
+                      <TD small>{r.forecast_prior||'—'}</TD>
+                      <TD small color={THEME_COLOR[g.theme]}>{r.forecast_current||'—'}</TD>
+                      <TD small>{r.risk_type_prior||'—'}</TD>
+                      <TD small>{r.risk_type_current||'—'}</TD>
+                    </tr>
+                  ))}</tbody>
+                </table>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+      <div style={{display:'flex',justifyContent:'flex-end'}}>
+        <ExportBtn onClick={()=>exportCSV(rows,'q4_wow.csv')}/>
       </div>
     </div>
   )
 }
 
+// ─── Data Dictionary Tab ──────────────────────────────────────────────────────
+function DataDictionaryTab(){
+  const S={
+    section:{fontWeight:800,fontSize:13,color:B.navy,textTransform:'uppercase',
+      letterSpacing:'0.07em',borderBottom:`2px solid ${B.orange}`,paddingBottom:6,marginBottom:12,marginTop:24},
+    label:{fontWeight:700,fontSize:12,color:B.navy,marginBottom:2},
+    desc:{fontSize:12,color:B.textMd,lineHeight:1.65,marginBottom:10},
+    tag:{display:'inline-block',background:B.faint,border:`1px solid ${B.border}`,
+      borderRadius:4,padding:'1px 7px',fontSize:11,color:B.muted,marginRight:4,marginBottom:4},
+    caveat:{background:'#FFF8F0',border:`1px solid ${B.amber}`,borderRadius:6,
+      padding:'8px 12px',fontSize:11,color:'#92400E',marginBottom:10},
+    example:{background:B.faint,border:`1px solid ${B.border}`,borderRadius:6,
+      padding:'8px 12px',fontSize:11,color:B.textMd,fontStyle:'italic',marginBottom:6},
+  }
+
+  const Field=({name,source,desc,caveat})=>(
+    <div style={{marginBottom:10}}>
+      <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:2}}>
+        <span style={S.label}>{name}</span>
+        <span style={{...S.tag,background:'#EEF2FF',color:'#4338CA',border:'1px solid #C7D2FE'}}>{source}</span>
+      </div>
+      <div style={S.desc}>{desc}</div>
+      {caveat&&<div style={S.caveat}>⚠ {caveat}</div>}
+    </div>
+  )
+
+  return (
+    <div style={{maxWidth:900,margin:'0 auto'}}>
+      <div style={cardStyle}>
+        <div style={{fontWeight:800,fontSize:16,color:B.navy,marginBottom:4}}>Data Dictionary & Query Guide</div>
+        <div style={{fontSize:12,color:B.muted,marginBottom:8}}>
+          Reference for all fields available in the AI agent and dashboard. Use this to understand what questions you can ask and how to interpret the answers.
+        </div>
+        <div style={S.caveat}>
+          SFDC data quality note: CPQ migration means renewal revenue may appear under different opportunity IDs than originally forecast. Never treat SFDC ARR as definitive without reconciling against finance.arr_monthly. ARR divergence &gt;10% is flagged automatically.
+        </div>
+
+        {/* ── Pipeline & Opportunity ── */}
+        <div style={S.section}>Pipeline & Opportunity</div>
+        <Field name="ATR (At-Risk Revenue)" source="SFDC" desc="Annual contract value scheduled to renew this quarter. RevOps ATR uses execution date as denominator and includes pull-forwards and multi-year deals. CS/Finance GRR ATR uses scheduled renewal date and annual contracts only. These produce different denominators; the dashboard uses RevOps ATR." caveat="Do not mix RevOps ATR and GRR ATR in the same calculation."/>
+        <Field name="Stage" source="SFDC" desc="Current pipeline stage: 1-Identification, 2-Renewal Campaign Started, 3-Contact Initiated, 4-Negotiation, 5-Closing, At Risk, Submitted for Booking, 6-Closed Won, Closed Lost."/>
+        <Field name="Forecast Category" source="SFDC" desc="Sales forecast classification: Pipeline, Best Case, Most Likely, Commit. Commit is the highest-confidence category."/>
+        <Field name="Risk Type / At-Risk Type" source="SFDC" desc="Churn or downsell flag set by the renewal team. Values: Churn, Downsell, or blank (no flag)."/>
+        <Field name="Churn Risk Renewal (CRN)" source="SFDC" desc="Green / Yellow / Red risk classification on the opportunity." caveat="CPQ migration means this field may be stale or misaligned with the finance view on some accounts."/>
+        <Field name="ARR Divergence %" source="Derived" desc="Difference between SFDC renewal_software_acv and finance.arr_monthly ARR for the same account. Values over 10% are flagged as data quality risk and SFDC ARR should not be used as the authoritative figure for those accounts."/>
+        <Field name="Days Since Stage Change" source="SFDC" desc="How many days since the opportunity last moved stage. 30+ days with no change is treated as a staleness risk signal independent of the stage name."/>
+        <Field name="WoW Movement" source="SFDC" desc="Stage or forecast category change detected between the two most recent weekly snapshots. Sourced from finance.pipeline_create_close_history (209 weekly snapshots back to Sep 2023)."/>
+
+        {/* ── Account Profile ── */}
+        <div style={S.section}>Account Profile</div>
+        <Field name="CSM Name" source="salesforce.account" desc="Customer Success Manager assigned to the account. Derived from Customer_Success_Manager_Email__c. Null indicates unassigned."/>
+        <Field name="Industry" source="salesforce.account" desc="Account industry classification. Sourced from Industry__c (custom field, 96% populated) with fallback to standard Industry field (33% populated)."/>
+        <Field name="Region" source="salesforce.account" desc="Account region: Americas, EMEA, APAC, MENA. Sourced from Account_Region__c (97% populated)."/>
+        <Field name="Customer Segment" source="salesforce.account" desc="Account tier classification from Customer_Segment_New__c. Values include Top 10, Enterprise, Commercial, SMB."/>
+        <Field name="Customer Since / Tenure" source="salesforce.account" desc="Date the account became a customer. Cascades through three fields: Customer_Since_Date__c, EN_Customer_Since__c, Earliest_Closed_Won_date__c. Tenure in years is derived from this date." caveat="Customer_Since_Date__c is only 23% populated across all accounts. Coverage is higher for established enterprise accounts."/>
+        <Field name="ARR Trend" source="finance.retention_arr_fact" desc="Direction and percentage change in ARR vs 3 quarters ago. Growing = more than 5% increase. Shrinking = more than 5% decrease. Flat = within 5% either way."/>
+        <Field name="Active Products" source="finance.arr_monthly" desc="Current active Product_Hierarchy_L2 values with ARR > 0. More reliable than SFDC product fields due to CPQ migration noise."/>
+        <Field name="Exec Sponsor" source="salesforce.account" desc="Named executive sponsor from Nintex_Executive_Sponsor__c. Currently sparse; population improves as exec sponsor program matures."/>
+
+        {/* ── Engagement & Activity ── */}
+        <div style={S.section}>Engagement & Activity</div>
+        <Field name="Last Contact Date" source="Gong + salesforce.task" desc="Most recent of: last Gong call date or last CS-owned task date (Email, Call, Meeting). Combined signal gives the most complete view of when Nintex last touched the account."/>
+        <Field name="Engagement Status" source="Derived" desc="Categorized from days since last contact. Active = 0-30 days. Cooling = 31-90 days. At Risk Engagement = 91-180 days. Dark = 180+ days. No Record = no Gong or task history found."/>
+        <Field name="Gong Calls Last 90 Days" source="gong.call" desc="Count of Gong-recorded calls linked to this account in the last 90 days. Zero does not necessarily mean no contact; email and task activity may still exist."/>
+        <Field name="CS Touches Last 90 Days" source="salesforce.task" desc="Count of CS-owned tasks (Email, Call, Meeting) logged against this account in the last 90 days. Dependent on CSM logging hygiene."/>
+
+        {/* ── Health & Risk Signals ── */}
+        <div style={S.section}>Health & Risk Signals</div>
+        <Field name="CSM Health Score" source="salesforce.account" desc="Numeric 0-100 score entered by the CSM via Success_CSM_Acct_Health_Sentiment_Score__c. Higher is healthier. Interim substitute for Tingono health score until database permissions are resolved." caveat="CSM-entered; subject to individual interpretation and logging frequency. Not systematically populated across all accounts."/>
+        <Field name="CSM Health Trend" source="salesforce.account" desc="Directional trend of CSM health score: Improving, Stable, Declining."/>
+        <Field name="Red Zone" source="salesforce.account" desc="Boolean flag indicating account is in escalation status. Red Zone Reason and Red Zone Category provide additional context when flagged."/>
+        <Field name="Tingono Health Score" source="tingono.acc_tingono_table" desc="AI-generated account health score from Tingono. Table exists in Databricks but read permissions are pending IT approval. Will be added to account dimensions after Friday IT meeting."/>
+
+        {/* ── GRR Methodology ── */}
+        <div style={S.section}>GRR Methodology</div>
+        <Field name="Annualized GRR" source="finance.retention_arr_fact" desc="Trailing 4-quarter compounded rate: Q1 × Q2 × Q3 × Q4 (each as a decimal). Do not average quarters. This is the correct comparison against any annualized target."/>
+        <Field name="FY26 GRR Targets" source="TPG Financial Model" desc="82.5% pure GRR. 86.0% GRR + price increase combined (more practical since PI and expansion cannot be separated in SFDC). The original 91% TPG target is no longer the operative benchmark."/>
+        <Field name="NRR" source="finance.retention_arr_fact" desc="Net Revenue Retention. Formula: (Start - Churn - Downsell + Expansion) / Start. Includes expansion; NRR above 100% means the cohort is growing."/>
+
+        {/* ── Example Agent Questions ── */}
+        <div style={S.section}>Example Questions for the AI Agent</div>
+        <div style={S.desc}>The agent has access to all fields above for Q4 renewal accounts. Try these:</div>
+        {[
+          'Who is the CSM for Verizon and when did we last contact them?',
+          'Which at-risk accounts have been dark for more than 90 days?',
+          'Show me CE RPA accounts in the top 30 with their ARR trend and engagement status',
+          'Which accounts have a CSM health score below 50 and renew before May 31?',
+          'Which accounts moved from Best Case to Commit this week?',
+          'What is the ARR divergence situation across the top 20 accounts?',
+          'Which shrinking ARR accounts have an open renewal this quarter?',
+          'Show me accounts in the red zone with their risk reason',
+          'Which accounts have no CSM assigned and more than $100K ATR?',
+          'Compare CE RPA GRR trend over the last 9 quarters',
+        ].map((q,i)=>(
+          <div key={i} style={S.example}>"{q}"</div>
+        ))}
+
+        {/* ── Known Limitations ── */}
+        <div style={S.section}>Known Limitations</div>
+        {[
+          ['SFDC CPQ Migration','Renewal revenue may appear under different opportunity IDs than originally forecast. ARR divergence >10% flags this automatically. Do not anchor GRR calculations to SFDC ATR alone.'],
+          ['Tingono Permissions','tingono.acc_tingono_table exists in Databricks but read access is pending IT approval. CSM health score is the interim substitute.'],
+          ['Customer Since Date','Only 23% of all accounts have Customer_Since_Date__c populated. Tenure figures may be missing for some accounts.'],
+          ['CSM Health Score','Manually entered by CSMs. Subject to inconsistent logging. Null does not mean healthy; it means not entered.'],
+          ['Gong Coverage','Gong captures calls only. Email and meeting activity comes from salesforce.task. Combined last contact date is the most complete signal but still dependent on CSM logging hygiene.'],
+          ['Product Data','finance.arr_monthly begins FY24 Q1. Customer retention data begins FY21 Q1. These have different time horizons and different product classification systems.'],
+          ['PowerBI','PowerBI has been unavailable for an extended period. This dashboard is the primary analytical tool for CS leadership.'],
+        ].map(([title,desc],i)=>(
+          <div key={i} style={{marginBottom:10}}>
+            <div style={S.label}>{title}</div>
+            <div style={S.desc}>{desc}</div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
 // ─── Chat Drawer ──────────────────────────────────────────────────────────────
 function ChatDrawer({open,onClose,systemPrompt}){
   const [messages,setMessages]=useState([])
@@ -682,7 +858,7 @@ function ChatDrawer({open,onClose,systemPrompt}){
 
 
 // ─── App Shell ────────────────────────────────────────────────────────────────
-const TABS=['Pipeline','Waterfall','At-Risk','Top Accounts','WoW']
+const TABS=['Pipeline','Waterfall','At-Risk','Top Accounts','WoW','Data Dictionary']
 
 export default function App(){
 const hasPassword = !!import.meta.env.VITE_APP_PASSWORD
@@ -743,6 +919,7 @@ const [unlocked,setUnlocked]=useState(!hasPassword||sessionStorage.getItem('nx_a
         {tab==='At-Risk'      && <AtRiskTab data={data}/>}
         {tab==='Top Accounts' && <TopAccountsTab data={data}/>}
         {tab==='WoW'          && <WowTab data={data}/>}
+        {tab==='Data Dictionary' && <DataDictionaryTab/>}
       </div>
       <ChatDrawer open={chatOpen} onClose={()=>setChatOpen(false)} systemPrompt={sp}/>
     </div>
