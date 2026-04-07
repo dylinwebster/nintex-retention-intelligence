@@ -71,17 +71,17 @@ function buildEnrichedSystem(frontendSystem, q4) {
     // Trim to top 50 by ARR and drop fields that are null-heavy or low-value
     // for agent Q&A to stay within 200K token context limit.
     const KEEP = new Set([
-      'account_name','industry','region','customer_segment',
-      'csm_name','renewal_specialist_email',
-      'tenure_years','customer_since_date',
-      'current_arr','arr_trend_direction','arr_trend_pct',
-      'active_products',
+      'account_name',
+      'csm_name',
+      'industry','region',
+      'tenure_years',
+      'arr_trend_direction','arr_trend_pct',
       'last_contact_date','days_since_last_contact','engagement_status',
       'gong_calls_last_90d','cs_touches_last_90d',
-      'sfdc_churn_risk_renewal','cs_churn_risk','cs_churn_risk_trend',
+      'sfdc_churn_risk_renewal','cs_churn_risk',
       'red_zone_flag','red_zone_reason',
       'csm_health_score','csm_health_trend',
-      'exec_sponsor','high_potential_flag'
+      'exec_sponsor'
     ]);
     const dims = q4.account_dimensions
       .sort((a, b) => (b.current_arr || 0) - (a.current_arr || 0))
