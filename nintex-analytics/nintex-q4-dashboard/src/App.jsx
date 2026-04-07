@@ -70,6 +70,21 @@ const stageCol = s => {
 const closeMonth = d => d ? d.slice(0,7) : null
 const MONTHS = [{key:'all',label:'All Months'},{key:'2026-04',label:'April'},{key:'2026-05',label:'May'},{key:'2026-06',label:'June'}]
 
+// ─── Shared ATR diff cell renderer ───────────────────────────────────────────
+// atr: what we expect the deal to close at
+// arr: current ARR from account_dimensions
+// green if atr > arr by >$500, red if atr < arr by >$500, muted otherwise
+function AtrDiffCells({atr, arr}) {
+  const diff = arr != null ? (atr || 0) - arr : null
+  const col = diff == null ? B.muted : diff > 500 ? B.green : diff < -500 ? B.red : B.muted
+  return (
+    <>
+      <TD right isMono>{arr != null ? fK(arr) : '—'}</TD>
+      <TD right isMono color={col}>{diff != null ? (diff > 500 ? '+' : '') + fK(diff) : '—'}</TD>
+    </>
+  )
+}
+
 function exportCSV(rows, filename) {
   if(!rows.length) return
   const cols = Object.keys(rows[0])
@@ -208,7 +223,6 @@ function PipelineTab({data}){
   const atRisk   =s.filter(r=>r.stage==='At Risk').reduce((a,r)=>a+r.total_atr,0)
   const commit   =s.filter(r=>r.forecast_category==='Commit'&&r.stage_group==='Open').reduce((a,r)=>a+r.total_atr,0)
 
-  // Aggregate by stage to remove forecast_category duplicates in chart
   const chartData = Object.values(
     s.filter(r=>r.stage_group==='Open').reduce((acc,r)=>{
       if(!acc[r.stage]) acc[r.stage]={stage:r.stage,atr:0}
@@ -283,7 +297,6 @@ function WaterfallTab({data}){
       : arr[i-1].ending_arr
     return {label:fQtr(r.FiscalYear,r.QuarterOfYear),beginning:begin,ending:r.ending_arr,churn:r.churn||0,downsell:r.downsell||0,expansion:r.expansion||0,new_logo:r.new_logo||0,net:(r.churn||0)+(r.downsell||0)+(r.expansion||0)+(r.new_logo||0),partial:i===arr.length-1}
   })
-  // Keep Ending ARR in raw dollars; right axis formatter handles display
   const chart=wf.map(r=>({label:r.label,Churn:Math.abs(r.churn),Downsell:Math.abs(r.downsell),Expansion:r.expansion,'New Logo':r.new_logo,'Ending ARR':r.ending}))
   const last=wf[wf.length-1]
 
@@ -354,6 +367,12 @@ function AtRiskTab({data}){
   const [risk,setRisk]=useState('all')
   const PER=25
 
+  const arrByAccount=useMemo(()=>{
+    const m={}
+    ;(data.account_dimensions||[]).forEach(r=>{if(r.accountid)m[r.accountid]=r.current_arr})
+    return m
+  },[data])
+
   const filtered=useMemo(()=>data.at_risk.filter(r=>{
     const mOk=month==='all'||closeMonth(r.close_date)===month
     const rOk=risk==='all'||r.at_risk_type===risk
@@ -398,7 +417,8 @@ function AtRiskTab({data}){
             <thead><tr>
               <SortTH col="account_name" ss={ss} width={170}>Account</SortTH>
               <SortTH col="atr_proxy_usd" ss={ss} right>ATR</SortTH>
-              <SortTH col="current_arr_usd" ss={ss} right>Curr ARR</SortTH>
+              <TH right>Curr ARR</TH>
+              <TH right>Diff</TH>
               <SortTH col="product_l2" ss={ss}>Product</SortTH>
               <SortTH col="stage" ss={ss}>Stage</SortTH>
               <SortTH col="at_risk_type" ss={ss}>Risk</SortTH>
@@ -410,7 +430,7 @@ function AtRiskTab({data}){
               <tr key={i} style={{background:i%2===0?B.card:B.faint,opacity:r.arr_divergence_pct>200?0.6:1}}>
                 <TD maxW={170} bold color={B.navy} title={r.account_name||r.accountid}>{r.account_name||r.accountid?.slice(-8)||'—'}</TD>
                 <TD right isMono bold color={B.navy}>{fK(r.atr_proxy_usd)}</TD>
-                <TD right isMono>{fK(r.current_arr_usd)}</TD>
+                <AtrDiffCells atr={r.atr_proxy_usd} arr={arrByAccount[r.accountid]}/>
                 <TD small>{r.product_l2}</TD>
                 <TD><Dot color={stageCol(r.stage)}/><span style={{fontSize:11}}>{r.stage}</span></TD>
                 <TD>{r.at_risk_type?<Badge label={r.at_risk_type} color={riskCol(r.at_risk_type)}/>:<span style={{color:B.muted,fontSize:11}}>—</span>}</TD>
@@ -440,12 +460,18 @@ function TopAccountsTab({data}){
     return ss.dir==='desc'?String(bv).localeCompare(String(av)):String(av).localeCompare(String(bv))
   }),[filtered,ss.col,ss.dir])
 
-const dimsByName=useMemo(()=>{
+  const dimsByName=useMemo(()=>{
     const m={}
     ;(data.account_dimensions||[]).forEach(r=>{if(r.account_name)m[r.account_name]=r})
     return m
   },[data])
-  
+
+  const dimsById=useMemo(()=>{
+    const m={}
+    ;(data.account_dimensions||[]).forEach(r=>{if(r.accountid)m[r.accountid]=r})
+    return m
+  },[data])
+
   return (
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
@@ -468,6 +494,7 @@ const dimsByName=useMemo(()=>{
               <SortTH col="account_name" ss={ss} width={170}>Account</SortTH>
               <SortTH col="current_arr_usd" ss={ss} right>Curr ARR</SortTH>
               <SortTH col="atr_proxy_usd" ss={ss} right>ATR</SortTH>
+              <TH right>Diff</TH>
               <SortTH col="product_l2" ss={ss}>Product</SortTH>
               <SortTH col="stage" ss={ss}>Stage</SortTH>
               <SortTH col="at_risk_type" ss={ss}>Risk</SortTH>
@@ -477,22 +504,31 @@ const dimsByName=useMemo(()=>{
               <TH>ARR Trend</TH>
               <SortTH col="close_date" ss={ss}>Close</SortTH>
             </tr></thead>
-            <tbody>{sorted.map((r,i)=>(
-              <tr key={i} style={{background:i%2===0?B.card:B.faint}}>
-                <TD isMono small color={B.muted}>{i+1}</TD>
-                <TD maxW={170} bold color={B.navy} title={r.account_name||r.accountid}>{r.account_name||r.accountid?.slice(-8)||'—'}</TD>
-                <TD right isMono bold color={B.navy}>{fK(r.current_arr_usd)}</TD>
-                <TD right isMono>{fK(r.atr_proxy_usd)}</TD>
-                <TD small>{r.product_l2}</TD>
-                <TD><Dot color={stageCol(r.stage)}/><span style={{fontSize:11}}>{r.stage}</span></TD>
-                <TD>{r.at_risk_type?<Badge label={r.at_risk_type} color={riskCol(r.at_risk_type)}/>:<span style={{color:B.muted,fontSize:11}}>—</span>}</TD>
-                <TD><Dot color={crnCol(r.churn_risk_renewal)}/><span style={{fontSize:11,color:crnCol(r.churn_risk_renewal)}}>{r.churn_risk_renewal||'—'}</span></TD>
-                <TD small>{dimsByName[r.account_name]?.csm_name?.split(' ')[0]||'—'}</TD>
-                <TD right isMono small>{dimsByName[r.account_name]?.tenure_years?dimsByName[r.account_name].tenure_years+'y':'—'}</TD>
-                <TD small>{(()=>{const d=dimsByName[r.account_name];if(!d)return '—';const t=d.arr_trend_direction,p=d.arr_trend_pct;const col=t==='growing'?B.green:t==='shrinking'?B.red:B.muted;return <span style={{color:col,fontWeight:600}}>{t==='growing'?'▲':t==='shrinking'?'▼':'●'} {p?Math.abs(p)+'%':t||'—'}</span>})()}</TD>
-                <TD isMono small>{fD(r.close_date)}</TD>
-              </tr>
-            ))}</tbody>
+            <tbody>{sorted.map((r,i)=>{
+              const dim=dimsByName[r.account_name]||dimsById[r.accountid]
+              return (
+                <tr key={i} style={{background:i%2===0?B.card:B.faint}}>
+                  <TD isMono small color={B.muted}>{i+1}</TD>
+                  <TD maxW={170} bold color={B.navy} title={r.account_name||r.accountid}>{r.account_name||r.accountid?.slice(-8)||'—'}</TD>
+                  <TD right isMono bold color={B.navy}>{fK(r.current_arr_usd)}</TD>
+                  <TD right isMono>{fK(r.atr_proxy_usd)}</TD>
+                  {(()=>{
+                    const arr=dim?.current_arr
+                    const diff=arr!=null?(r.atr_proxy_usd||0)-arr:null
+                    const col=diff==null?B.muted:diff>500?B.green:diff<-500?B.red:B.muted
+                    return <TD right isMono color={col}>{diff!=null?(diff>500?'+':'')+fK(diff):'—'}</TD>
+                  })()}
+                  <TD small>{r.product_l2}</TD>
+                  <TD><Dot color={stageCol(r.stage)}/><span style={{fontSize:11}}>{r.stage}</span></TD>
+                  <TD>{r.at_risk_type?<Badge label={r.at_risk_type} color={riskCol(r.at_risk_type)}/>:<span style={{color:B.muted,fontSize:11}}>—</span>}</TD>
+                  <TD><Dot color={crnCol(r.churn_risk_renewal)}/><span style={{fontSize:11,color:crnCol(r.churn_risk_renewal)}}>{r.churn_risk_renewal||'—'}</span></TD>
+                  <TD small>{dim?.csm_name?.split(' ')[0]||'—'}</TD>
+                  <TD right isMono small>{dim?.tenure_years?dim.tenure_years+'y':'—'}</TD>
+                  <TD small>{(()=>{if(!dim)return '—';const t=dim.arr_trend_direction,p=dim.arr_trend_pct;const col=t==='growing'?B.green:t==='shrinking'?B.red:B.muted;return <span style={{color:col,fontWeight:600}}>{t==='growing'?'▲':t==='shrinking'?'▼':'●'} {p?Math.abs(p)+'%':t||'—'}</span>})()}</TD>
+                  <TD isMono small>{fD(r.close_date)}</TD>
+                </tr>
+              )
+            })}</tbody>
           </table>
         </div>
       </div>
@@ -503,13 +539,13 @@ const dimsByName=useMemo(()=>{
 // ─── WoW Tab (redesigned) ─────────────────────────────────────────────────────
 function WowTab({data}){
   const rows=data.wow_movement||[]
-  const arrByAccount=useMemo(()=>{
-  const m={}
-  ;(data.account_dimensions||[]).forEach(r=>{if(r.accountid)m[r.accountid]=r.current_arr})
-  return m
-},[data])
 
-  // ── Classify each movement into a theme ──────────────────────────────────
+  const arrByAccount=useMemo(()=>{
+    const m={}
+    ;(data.account_dimensions||[]).forEach(r=>{if(r.accountid)m[r.accountid]=r.current_arr})
+    return m
+  },[data])
+
   const classify=r=>{
     const s=r.stage_current, sp=r.stage_prior, fp=r.forecast_prior, fc=r.forecast_current
     if(s==='Closed Lost') return 'Closed Lost'
@@ -531,28 +567,16 @@ function WowTab({data}){
     'Forecast Downgraded','Stage Regressed','Moved to At Risk','Closed Lost','Other Movement']
 
   const THEME_COLOR={
-    'Won / Submitted':      B.green,
-    'Forecast Upgraded':    B.green,
-    'Stage Progressed':     B.green,
-    'Forecast Downgraded':  B.amber,
-    'Stage Regressed':      B.amber,
-    'Moved to At Risk':     B.pink,
-    'Closed Lost':          B.red,
-    'Other Movement':       B.muted,
+    'Won / Submitted':B.green,'Forecast Upgraded':B.green,'Stage Progressed':B.green,
+    'Forecast Downgraded':B.amber,'Stage Regressed':B.amber,
+    'Moved to At Risk':B.pink,'Closed Lost':B.red,'Other Movement':B.muted,
   }
-
   const THEME_ICON={
-    'Won / Submitted':      '✓',
-    'Forecast Upgraded':    '▲',
-    'Stage Progressed':     '↑',
-    'Forecast Downgraded':  '▼',
-    'Stage Regressed':      '↓',
-    'Moved to At Risk':     '⚠',
-    'Closed Lost':          '✕',
-    'Other Movement':       '→',
+    'Won / Submitted':'✓','Forecast Upgraded':'▲','Stage Progressed':'↑',
+    'Forecast Downgraded':'▼','Stage Regressed':'↓',
+    'Moved to At Risk':'⚠','Closed Lost':'✕','Other Movement':'→',
   }
 
-  // Group rows by theme
   const grouped=useMemo(()=>{
     const g={}
     rows.forEach(r=>{
@@ -567,8 +591,7 @@ function WowTab({data}){
   const [expanded,setExpanded]=useState({})
   const toggle=t=>setExpanded(e=>({...e,[t]:!e[t]}))
 
-  // KPI counts
-  const won =rows.filter(r=>r.stage_current==='6 - Closed Won'||r.stage_current==='Submitted for Booking')
+  const won=rows.filter(r=>r.stage_current==='6 - Closed Won'||r.stage_current==='Submitted for Booking')
   const lost=rows.filter(r=>r.stage_current==='Closed Lost')
   const atRisk=rows.filter(r=>r.stage_current==='At Risk')
 
@@ -580,7 +603,6 @@ function WowTab({data}){
         <KPI label="Closed Lost" value={lost.length} accent={B.red} sub={fM(lost.reduce((s,r)=>s+(r.atr_proxy_usd||0),0))}/>
         <KPI label="Moved to At Risk" value={atRisk.length} accent={B.pink} sub={fM(atRisk.reduce((s,r)=>s+(r.atr_proxy_usd||0),0))}/>
       </div>
-
       {rows.length===0?(
         <div style={{...cardStyle,textAlign:'center',padding:48,color:B.muted}}>
           <div style={{fontSize:14,marginBottom:8}}>No stage movements detected yet</div>
@@ -590,19 +612,13 @@ function WowTab({data}){
         <div style={{display:'flex',flexDirection:'column',gap:8}}>
           {grouped.map(g=>(
             <div key={g.theme} style={{...cardStyle,padding:0,overflow:'hidden'}}>
-              {/* Theme header row */}
-              <div
-                onClick={()=>toggle(g.theme)}
-                style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',cursor:'pointer',borderBottom:expanded[g.theme]?`1px solid ${B.border}`:'none'}}
-              >
+              <div onClick={()=>toggle(g.theme)} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 16px',cursor:'pointer',borderBottom:expanded[g.theme]?`1px solid ${B.border}`:'none'}}>
                 <span style={{fontSize:18,color:THEME_COLOR[g.theme],fontWeight:700,width:20,textAlign:'center'}}>{THEME_ICON[g.theme]}</span>
                 <span style={{fontWeight:700,fontSize:13,color:B.navy,flex:1}}>{g.theme}</span>
                 <span style={{...mono,fontSize:12,color:B.muted,marginRight:8}}>{fM(g.totalATR)}</span>
                 <span style={{background:THEME_COLOR[g.theme],color:'#fff',borderRadius:12,padding:'2px 9px',fontSize:11,fontWeight:700}}>{g.rows.length}</span>
                 <span style={{color:B.muted,fontSize:12,marginLeft:4}}>{expanded[g.theme]?'▲':'▼'}</span>
               </div>
-
-              {/* Expanded account list */}
               {expanded[g.theme]&&(
                 <table style={{width:'100%',borderCollapse:'collapse'}}>
                   <thead><tr style={{background:B.faint}}>
@@ -621,15 +637,7 @@ function WowTab({data}){
                     <tr key={i} style={{background:i%2===0?B.card:B.faint}}>
                       <TD bold color={B.navy} maxW={200} title={r.account_name}>{r.account_name||r.accountid?.slice(-8)||'—'}</TD>
                       <TD right isMono>{fK(r.atr_proxy_usd)}</TD>
-                      {(()=>{
-                        const arr=arrByAccount[r.accountid]
-                        const diff=arr!=null?(r.atr_proxy_usd||0)-arr:null
-                        const col=diff==null?B.muted:diff>500?B.green:diff<-500?B.red:B.muted
-                        return <>
-                          <TD right isMono>{arr!=null?fK(arr):'—'}</TD>
-                          <TD right isMono color={col}>{diff!=null?(diff>500?'+':'')+fK(diff):'—'}</TD>
-                        </>
-                      })()}
+                      <AtrDiffCells atr={r.atr_proxy_usd} arr={arrByAccount[r.accountid]}/>
                       <TD small>{r.stage_prior||'—'}</TD>
                       <TD small color={THEME_COLOR[g.theme]}>{r.stage_current||'—'}</TD>
                       <TD small>{r.forecast_prior||'—'}</TD>
@@ -654,18 +662,13 @@ function WowTab({data}){
 // ─── Data Dictionary Tab ──────────────────────────────────────────────────────
 function DataDictionaryTab(){
   const S={
-    section:{fontWeight:800,fontSize:13,color:B.navy,textTransform:'uppercase',
-      letterSpacing:'0.07em',borderBottom:`2px solid ${B.orange}`,paddingBottom:6,marginBottom:12,marginTop:24},
+    section:{fontWeight:800,fontSize:13,color:B.navy,textTransform:'uppercase',letterSpacing:'0.07em',borderBottom:`2px solid ${B.orange}`,paddingBottom:6,marginBottom:12,marginTop:24},
     label:{fontWeight:700,fontSize:12,color:B.navy,marginBottom:2},
     desc:{fontSize:12,color:B.textMd,lineHeight:1.65,marginBottom:10},
-    tag:{display:'inline-block',background:B.faint,border:`1px solid ${B.border}`,
-      borderRadius:4,padding:'1px 7px',fontSize:11,color:B.muted,marginRight:4,marginBottom:4},
-    caveat:{background:'#FFF8F0',border:`1px solid ${B.amber}`,borderRadius:6,
-      padding:'8px 12px',fontSize:11,color:'#92400E',marginBottom:10},
-    example:{background:B.faint,border:`1px solid ${B.border}`,borderRadius:6,
-      padding:'8px 12px',fontSize:11,color:B.textMd,fontStyle:'italic',marginBottom:6},
+    tag:{display:'inline-block',background:B.faint,border:`1px solid ${B.border}`,borderRadius:4,padding:'1px 7px',fontSize:11,color:B.muted,marginRight:4,marginBottom:4},
+    caveat:{background:'#FFF8F0',border:`1px solid ${B.amber}`,borderRadius:6,padding:'8px 12px',fontSize:11,color:'#92400E',marginBottom:10},
+    example:{background:B.faint,border:`1px solid ${B.border}`,borderRadius:6,padding:'8px 12px',fontSize:11,color:B.textMd,fontStyle:'italic',marginBottom:6},
   }
-
   const Field=({name,source,desc,caveat})=>(
     <div style={{marginBottom:10}}>
       <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:2}}>
@@ -676,21 +679,15 @@ function DataDictionaryTab(){
       {caveat&&<div style={S.caveat}>⚠ {caveat}</div>}
     </div>
   )
-
   return (
     <div style={{maxWidth:900,margin:'0 auto'}}>
       <div style={cardStyle}>
         <div style={{fontWeight:800,fontSize:16,color:B.navy,marginBottom:4}}>Data Dictionary & Query Guide</div>
-        <div style={{fontSize:12,color:B.muted,marginBottom:8}}>
-          Reference for all fields available in the AI agent and dashboard. Use this to understand what questions you can ask and how to interpret the answers.
-        </div>
-        <div style={S.caveat}>
-          SFDC data quality note: CPQ migration means renewal revenue may appear under different opportunity IDs than originally forecast. Never treat SFDC ARR as definitive without reconciling against finance.arr_monthly. ARR divergence &gt;10% is flagged automatically.
-        </div>
-
-        {/* ── Pipeline & Opportunity ── */}
+        <div style={{fontSize:12,color:B.muted,marginBottom:8}}>Reference for all fields available in the AI agent and dashboard. Use this to understand what questions you can ask and how to interpret the answers.</div>
+        <div style={S.caveat}>SFDC data quality note: CPQ migration means renewal revenue may appear under different opportunity IDs than originally forecast. Never treat SFDC ARR as definitive without reconciling against finance.arr_monthly. ARR divergence &gt;10% is flagged automatically.</div>
         <div style={S.section}>Pipeline & Opportunity</div>
         <Field name="ATR (At-Risk Revenue)" source="SFDC" desc="Annual contract value scheduled to renew this quarter. RevOps ATR uses execution date as denominator and includes pull-forwards and multi-year deals. CS/Finance GRR ATR uses scheduled renewal date and annual contracts only. These produce different denominators; the dashboard uses RevOps ATR." caveat="Do not mix RevOps ATR and GRR ATR in the same calculation."/>
+        <Field name="Diff (ATR vs Curr ARR)" source="Derived" desc="ATR minus current ARR from finance.retention_arr_fact. Green = ATR exceeds ARR by more than $500 (expansion or price increase). Red = ATR is below ARR by more than $500 (downsell). Muted = within $500 either way (flat renewal)."/>
         <Field name="Stage" source="SFDC" desc="Current pipeline stage: 1-Identification, 2-Renewal Campaign Started, 3-Contact Initiated, 4-Negotiation, 5-Closing, At Risk, Submitted for Booking, 6-Closed Won, Closed Lost."/>
         <Field name="Forecast Category" source="SFDC" desc="Sales forecast classification: Pipeline, Best Case, Most Likely, Commit. Commit is the highest-confidence category."/>
         <Field name="Risk Type / At-Risk Type" source="SFDC" desc="Churn or downsell flag set by the renewal team. Values: Churn, Downsell, or blank (no flag)."/>
@@ -698,8 +695,6 @@ function DataDictionaryTab(){
         <Field name="ARR Divergence %" source="Derived" desc="Difference between SFDC renewal_software_acv and finance.arr_monthly ARR for the same account. Values over 10% are flagged as data quality risk and SFDC ARR should not be used as the authoritative figure for those accounts."/>
         <Field name="Days Since Stage Change" source="SFDC" desc="How many days since the opportunity last moved stage. 30+ days with no change is treated as a staleness risk signal independent of the stage name."/>
         <Field name="WoW Movement" source="SFDC" desc="Stage or forecast category change detected between the two most recent weekly snapshots. Sourced from finance.pipeline_create_close_history (209 weekly snapshots back to Sep 2023)."/>
-
-        {/* ── Account Profile ── */}
         <div style={S.section}>Account Profile</div>
         <Field name="CSM Name" source="salesforce.account" desc="Customer Success Manager assigned to the account. Derived from Customer_Success_Manager_Email__c. Null indicates unassigned."/>
         <Field name="Industry" source="salesforce.account" desc="Account industry classification. Sourced from Industry__c (custom field, 96% populated) with fallback to standard Industry field (33% populated)."/>
@@ -709,28 +704,20 @@ function DataDictionaryTab(){
         <Field name="ARR Trend" source="finance.retention_arr_fact" desc="Direction and percentage change in ARR vs 3 quarters ago. Growing = more than 5% increase. Shrinking = more than 5% decrease. Flat = within 5% either way."/>
         <Field name="Active Products" source="finance.arr_monthly" desc="Current active Product_Hierarchy_L2 values with ARR > 0. More reliable than SFDC product fields due to CPQ migration noise."/>
         <Field name="Exec Sponsor" source="salesforce.account" desc="Named executive sponsor from Nintex_Executive_Sponsor__c. Currently sparse; population improves as exec sponsor program matures."/>
-
-        {/* ── Engagement & Activity ── */}
         <div style={S.section}>Engagement & Activity</div>
         <Field name="Last Contact Date" source="Gong + salesforce.task" desc="Most recent of: last Gong call date or last CS-owned task date (Email, Call, Meeting). Combined signal gives the most complete view of when Nintex last touched the account."/>
         <Field name="Engagement Status" source="Derived" desc="Categorized from days since last contact. Active = 0-30 days. Cooling = 31-90 days. At Risk Engagement = 91-180 days. Dark = 180+ days. No Record = no Gong or task history found."/>
         <Field name="Gong Calls Last 90 Days" source="gong.call" desc="Count of Gong-recorded calls linked to this account in the last 90 days. Zero does not necessarily mean no contact; email and task activity may still exist."/>
         <Field name="CS Touches Last 90 Days" source="salesforce.task" desc="Count of CS-owned tasks (Email, Call, Meeting) logged against this account in the last 90 days. Dependent on CSM logging hygiene."/>
-
-        {/* ── Health & Risk Signals ── */}
         <div style={S.section}>Health & Risk Signals</div>
         <Field name="CSM Health Score" source="salesforce.account" desc="Numeric 0-100 score entered by the CSM via Success_CSM_Acct_Health_Sentiment_Score__c. Higher is healthier. Interim substitute for Tingono health score until database permissions are resolved." caveat="CSM-entered; subject to individual interpretation and logging frequency. Not systematically populated across all accounts."/>
         <Field name="CSM Health Trend" source="salesforce.account" desc="Directional trend of CSM health score: Improving, Stable, Declining."/>
         <Field name="Red Zone" source="salesforce.account" desc="Boolean flag indicating account is in escalation status. Red Zone Reason and Red Zone Category provide additional context when flagged."/>
         <Field name="Tingono Health Score" source="tingono.acc_tingono_table" desc="AI-generated account health score from Tingono. Table exists in Databricks but read permissions are pending IT approval. Will be added to account dimensions after Friday IT meeting."/>
-
-        {/* ── GRR Methodology ── */}
         <div style={S.section}>GRR Methodology</div>
         <Field name="Annualized GRR" source="finance.retention_arr_fact" desc="Trailing 4-quarter compounded rate: Q1 × Q2 × Q3 × Q4 (each as a decimal). Do not average quarters. This is the correct comparison against any annualized target."/>
         <Field name="FY26 GRR Targets" source="TPG Financial Model" desc="82.5% pure GRR. 86.0% GRR + price increase combined (more practical since PI and expansion cannot be separated in SFDC). The original 91% TPG target is no longer the operative benchmark."/>
         <Field name="NRR" source="finance.retention_arr_fact" desc="Net Revenue Retention. Formula: (Start - Churn - Downsell + Expansion) / Start. Includes expansion; NRR above 100% means the cohort is growing."/>
-
-        {/* ── Example Agent Questions ── */}
         <div style={S.section}>Example Questions for the AI Agent</div>
         <div style={S.desc}>The agent has access to all fields above for Q4 renewal accounts. Try these:</div>
         {[
@@ -747,8 +734,6 @@ function DataDictionaryTab(){
         ].map((q,i)=>(
           <div key={i} style={S.example}>"{q}"</div>
         ))}
-
-        {/* ── Known Limitations ── */}
         <div style={S.section}>Known Limitations</div>
         {[
           ['SFDC CPQ Migration','Renewal revenue may appear under different opportunity IDs than originally forecast. ARR divergence >10% flags this automatically. Do not anchor GRR calculations to SFDC ATR alone.'],
@@ -768,6 +753,7 @@ function DataDictionaryTab(){
     </div>
   )
 }
+
 // ─── Chat Drawer ──────────────────────────────────────────────────────────────
 function ChatDrawer({open,onClose,systemPrompt}){
   const [messages,setMessages]=useState([])
@@ -819,7 +805,6 @@ function ChatDrawer({open,onClose,systemPrompt}){
   )
 
   const STARTERS=['What is the Q4 forecast vs the 91% TPG GRR target?','Which accounts closing in April have churn risk?','How does Q4 at-risk ATR compare to Q3?','Which products have the largest Q4 ATR exposure?']
-
   const btnStyle=(active)=>({padding:'5px 12px',borderRadius:6,border:`1px solid ${B.border}`,background:'transparent',color:active?B.orange:B.muted,fontSize:11,fontWeight:600,cursor:active?'pointer':'default',opacity:active?1:0.5})
 
   return (
@@ -872,13 +857,12 @@ function ChatDrawer({open,onClose,systemPrompt}){
   )
 }
 
-
 // ─── App Shell ────────────────────────────────────────────────────────────────
 const TABS=['Pipeline','Waterfall','At-Risk','Top Accounts','WoW','Data Dictionary']
 
 export default function App(){
-const hasPassword = !!import.meta.env.VITE_APP_PASSWORD
-const [unlocked,setUnlocked]=useState(!hasPassword||sessionStorage.getItem('nx_auth')==='1')  
+  const hasPassword=!!import.meta.env.VITE_APP_PASSWORD
+  const [unlocked,setUnlocked]=useState(!hasPassword||sessionStorage.getItem('nx_auth')==='1')
   if(!unlocked) return <PasswordGate onUnlock={()=>setUnlocked(true)}/>
   const [data,setData]=useState(null)
   const [loading,setLoading]=useState(true)
@@ -930,11 +914,11 @@ const [unlocked,setUnlocked]=useState(!hasPassword||sessionStorage.getItem('nx_a
             <button key={t} onClick={()=>setTab(t)} style={{padding:'7px 20px',borderRadius:7,border:'none',background:tab===t?B.navy:'transparent',color:tab===t?'#fff':B.muted,fontSize:12,fontWeight:600,cursor:'pointer',transition:'all 0.15s',borderBottom:tab===t?`2px solid ${B.orange}`:'2px solid transparent'}}>{t}</button>
           ))}
         </div>
-        {tab==='Pipeline'     && <PipelineTab data={data}/>}
-        {tab==='Waterfall'    && <WaterfallTab data={data}/>}
-        {tab==='At-Risk'      && <AtRiskTab data={data}/>}
-        {tab==='Top Accounts' && <TopAccountsTab data={data}/>}
-        {tab==='WoW'          && <WowTab data={data}/>}
+        {tab==='Pipeline'        && <PipelineTab data={data}/>}
+        {tab==='Waterfall'       && <WaterfallTab data={data}/>}
+        {tab==='At-Risk'         && <AtRiskTab data={data}/>}
+        {tab==='Top Accounts'    && <TopAccountsTab data={data}/>}
+        {tab==='WoW'             && <WowTab data={data}/>}
         {tab==='Data Dictionary' && <DataDictionaryTab/>}
       </div>
       <ChatDrawer open={chatOpen} onClose={()=>setChatOpen(false)} systemPrompt={sp}/>
