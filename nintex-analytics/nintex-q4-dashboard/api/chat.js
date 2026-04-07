@@ -13,21 +13,19 @@ const { head, getDownloadUrl } = require('@vercel/blob');
 // ─── Fetch live q4_data.json from Vercel Blob ─────────────────────────────────
 async function fetchQ4Data() {
   try {
-    // List blobs to find q4_data.json, then fetch its contents
-    const res = await fetch(
-      `https://api.vercel.com/v2/blob/files?prefix=q4_data`,
-      {
-        headers: {
-          Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
-        },
-      }
-    );
-    const list = await res.json();
-    const blob = list.blobs && list.blobs[0];
-    if (!blob) return null;
-
-    const dataRes = await fetch(blob.downloadUrl);
-    return await dataRes.json();
+    // Fetch from the fixed blob URL directly — same URL the extract script uploads to.
+    // Private blobs require the token as a query param or Authorization header.
+    const url = 'https://c7xixtsp9yzahqvo.private.blob.vercel-storage.com/q4_data.json';
+    const res = await fetch(url, {
+      headers: {
+        Authorization: `Bearer ${process.env.BLOB_READ_WRITE_TOKEN}`,
+      },
+    });
+    if (!res.ok) {
+      console.warn('Blob fetch failed:', res.status, await res.text());
+      return null;
+    }
+    return await res.json();
   } catch (e) {
     console.warn('Could not fetch q4_data from Blob:', e.message);
     return null;
