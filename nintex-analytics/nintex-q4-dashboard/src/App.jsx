@@ -440,6 +440,12 @@ function TopAccountsTab({data}){
     return ss.dir==='desc'?String(bv).localeCompare(String(av)):String(av).localeCompare(String(bv))
   }),[filtered,ss.col,ss.dir])
 
+const dimsByName=useMemo(()=>{
+    const m={}
+    ;(data.account_dimensions||[]).forEach(r=>{if(r.account_name)m[r.account_name]=r})
+    return m
+  },[data])
+  
   return (
     <div style={{display:'flex',flexDirection:'column',gap:14}}>
       <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
@@ -466,6 +472,9 @@ function TopAccountsTab({data}){
               <SortTH col="stage" ss={ss}>Stage</SortTH>
               <SortTH col="at_risk_type" ss={ss}>Risk</SortTH>
               <SortTH col="churn_risk_renewal" ss={ss}>CRN</SortTH>
+              <TH>CSM</TH>
+              <TH right>Tenure</TH>
+              <TH>ARR Trend</TH>
               <SortTH col="close_date" ss={ss}>Close</SortTH>
             </tr></thead>
             <tbody>{sorted.map((r,i)=>(
@@ -478,6 +487,9 @@ function TopAccountsTab({data}){
                 <TD><Dot color={stageCol(r.stage)}/><span style={{fontSize:11}}>{r.stage}</span></TD>
                 <TD>{r.at_risk_type?<Badge label={r.at_risk_type} color={riskCol(r.at_risk_type)}/>:<span style={{color:B.muted,fontSize:11}}>—</span>}</TD>
                 <TD><Dot color={crnCol(r.churn_risk_renewal)}/><span style={{fontSize:11,color:crnCol(r.churn_risk_renewal)}}>{r.churn_risk_renewal||'—'}</span></TD>
+                <TD small>{dimsByName[r.account_name]?.csm_name?.split(' ')[0]||'—'}</TD>
+                <TD right isMono small>{dimsByName[r.account_name]?.tenure_years?dimsByName[r.account_name].tenure_years+'y':'—'}</TD>
+                <TD small>{(()=>{const d=dimsByName[r.account_name];if(!d)return '—';const t=d.arr_trend_direction,p=d.arr_trend_pct;const col=t==='growing'?B.green:t==='shrinking'?B.red:B.muted;return <span style={{color:col,fontWeight:600}}>{t==='growing'?'▲':t==='shrinking'?'▼':'●'} {p?Math.abs(p)+'%':t||'—'}</span>})()}</TD>
                 <TD isMono small>{fD(r.close_date)}</TD>
               </tr>
             ))}</tbody>
