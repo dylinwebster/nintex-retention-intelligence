@@ -505,7 +505,7 @@ function WowTab({data}){
   const rows=data.wow_movement||[]
   const arrByAccount=useMemo(()=>{
   const m={}
-  ;(data.top_accounts||[]).forEach(r=>{if(r.accountid)m[r.accountid]=r.current_arr_usd})
+  ;(data.account_dimensions||[]).forEach(r=>{if(r.accountid)m[r.accountid]=r.current_arr})
   return m
 },[data])
 
