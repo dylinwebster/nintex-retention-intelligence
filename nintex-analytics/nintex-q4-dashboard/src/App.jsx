@@ -583,7 +583,7 @@ function ChatDrawer({open,onClose,systemPrompt}){
       const d=await res.json()
       let text=d.content?.[0]?.text||d.error||'No response.'
       if(d.stop_reason==='max_tokens') text+='\n\n⚠ Response was cut off. Try asking for fewer items, or follow up with "continue from where you left off".'
-      setMessages(m=>[...m,{role:'assistant',content:text,showExport:text.split('\n').length>8}])
+      setMessages(m=>[...m,{role:'assistant',content:text,showExport:text.length>200}])
     }catch{setMessages(m=>[...m,{role:'assistant',content:'Error: could not reach the API.'}])}
     setLoading(false)
   }
