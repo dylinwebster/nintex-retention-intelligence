@@ -3,6 +3,8 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
   ComposedChart, Line, CartesianGrid,
 } from 'recharts'
+import DigestTab from './DigestTab'
+import ForecastCallScorecard from './ForecastCallScorecard'
 
 const DATA_URL = '/api/data'
 
@@ -71,9 +73,6 @@ const closeMonth = d => d ? d.slice(0,7) : null
 const MONTHS = [{key:'all',label:'All Months'},{key:'2026-04',label:'April'},{key:'2026-05',label:'May'},{key:'2026-06',label:'June'}]
 
 // ─── Shared ATR diff cell renderer ───────────────────────────────────────────
-// atr: what we expect the deal to close at
-// arr: current ARR from account_dimensions
-// green if atr > arr by >$500, red if atr < arr by >$500, muted otherwise
 function AtrDiffCells({atr, arr}) {
   const diff = arr != null ? (atr || 0) - arr : null
   const col = diff == null ? B.muted : diff > 500 ? B.green : diff < -500 ? B.red : B.muted
@@ -858,7 +857,7 @@ function ChatDrawer({open,onClose,systemPrompt}){
 }
 
 // ─── App Shell ────────────────────────────────────────────────────────────────
-const TABS=['Pipeline','Waterfall','At-Risk','Top Accounts','WoW','Data Dictionary']
+const TABS = ['Forecast Scorecard','Pipeline','Waterfall','At-Risk','Top Accounts','WoW','Data Dictionary','Wednesday Digest']
 
 export default function App(){
   const hasPassword=!!import.meta.env.VITE_APP_PASSWORD
@@ -914,12 +913,14 @@ export default function App(){
             <button key={t} onClick={()=>setTab(t)} style={{padding:'7px 20px',borderRadius:7,border:'none',background:tab===t?B.navy:'transparent',color:tab===t?'#fff':B.muted,fontSize:12,fontWeight:600,cursor:'pointer',transition:'all 0.15s',borderBottom:tab===t?`2px solid ${B.orange}`:'2px solid transparent'}}>{t}</button>
           ))}
         </div>
-        {tab==='Pipeline'        && <PipelineTab data={data}/>}
-        {tab==='Waterfall'       && <WaterfallTab data={data}/>}
-        {tab==='At-Risk'         && <AtRiskTab data={data}/>}
-        {tab==='Top Accounts'    && <TopAccountsTab data={data}/>}
-        {tab==='WoW'             && <WowTab data={data}/>}
-        {tab==='Data Dictionary' && <DataDictionaryTab/>}
+        {tab==='Forecast Scorecard'&& <ForecastCallScorecard data={data.forecast_summary}/>}
+        {tab==='Pipeline'          && <PipelineTab data={data}/>}
+        {tab==='Waterfall'         && <WaterfallTab data={data}/>}
+        {tab==='At-Risk'           && <AtRiskTab data={data}/>}
+        {tab==='Top Accounts'      && <TopAccountsTab data={data}/>}
+        {tab==='WoW'               && <WowTab data={data}/>}
+        {tab==='Data Dictionary'   && <DataDictionaryTab/>}
+        {tab==='Wednesday Digest'  && <DigestTab/>}
       </div>
       <ChatDrawer open={chatOpen} onClose={()=>setChatOpen(false)} systemPrompt={sp}/>
     </div>
