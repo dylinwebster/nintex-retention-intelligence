@@ -303,7 +303,7 @@ function WaterfallTab({data}){
     <div style={{display:'flex',flexDirection:'column',gap:16}}>
       <div style={{display:'flex',gap:12,flexWrap:'wrap'}}>
         <KPI label="Q4 Ending ARR (partial)" value={fM(last.ending)} accent={B.purple} sub="As of data refresh"/>
-        <KPI label="Q4 Churn" value={last.churn!==0?fM(last.churn):'—'} accent={B.pink}/>
+        <KPI label="Q4 Confirmed Churn" value={data.forecast_summary?.revops_closed_lost ? fM(data.forecast_summary.revops_closed_lost) : '—'} accent={B.pink} sub="Closed Lost in SFDC · Finance not yet posted"/>
         <KPI label="Q4 Downsell" value={fM(last.downsell)} accent={B.orange}/>
         <KPI label="Q4 Expansion" value={fM(last.expansion)} accent={B.green}/>
         <KPI label="Q4 New Logo" value={last.new_logo!==0?fM(last.new_logo):'—'} accent={B.amber}/>
